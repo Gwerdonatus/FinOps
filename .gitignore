@@ -1,0 +1,44 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+*.sqlite3
+staticfiles/
+media/
+.pytest_cache/
+.coverage
+dist/
+build/
+*.egg-info/
+
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+env/
+venv/
+.venv/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+
+# Environment variables
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Migrations (optional – only if team agrees)
+# */migrations/__pycache__/

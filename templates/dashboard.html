@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load risk_badge %}
+
+{% block title %}Dashboard • FinOps Ops Console{% endblock %}
+
+{% block content %}
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight">Dashboard</h1>
+      <p class="mt-1 text-sm text-slate-600">Refund SLA monitoring + early warning alerts.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'providers:connections' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-slate-50">
+        Connections
+      </a>
+      <a href="{% url 'ops_refunds:list' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50">
+        View Refunds
+      </a>
+    </div>
+  </div>
+
+  {% if not has_connection %}
+    <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <div class="text-sm font-semibold">No providers connected yet</div>
+          <div class="mt-1 text-sm text-slate-600">
+            Your dashboard stays empty until you connect and sync a provider.
+          </div>
+        </div>
+        <a href="{% url 'providers:connections' %}" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+          Connect now →
+        </a>
+      </div>
+      <div class="mt-4 text-sm text-slate-700">
+        Recommended for demo: Stripe → Save test key → Test → Generate 250 demo transactions.
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="mt-6 grid gap-4 md:grid-cols-4">
+    <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+      <div class="text-xs text-slate-500">Safe</div>
+      <div class="mt-2 text-3xl font-semibold">{{ counts.SAFE|default:"0" }}</div>
+    </div>
+    <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+      <div class="text-xs text-slate-500">Due soon</div>
+      <div class="mt-2 text-3xl font-semibold">{{ counts.DUE_SOON|default:"0" }}</div>
+    </div>
+    <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+      <div class="text-xs text-slate-500">At risk</div>
+      <div class="mt-2 text-3xl font-semibold">{{ counts.AT_RISK|default:"0" }}</div>
+    </div>
+    <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+      <div class="text-xs text-slate-500">Overdue</div>
+      <div class="mt-2 text-3xl font-semibold text-red-600">{{ counts.OVERDUE|default:"0" }}</div>
+    </div>
+  </div>
+
+  <div class="mt-6 grid gap-4 md:grid-cols-3">
+    <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200 md:col-span-2">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-sm font-semibold">Workspace status</div>
+          <div class="mt-1 text-sm text-slate-600">
+            {% if has_data %}
+              Live data is loaded from connected providers.
+            {% else %}
+              No transactions yet — connect and sync to populate metrics.
+            {% endif %}
+          </div>
+        </div>
+        {% if has_data %}
+          <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-200">Active ✅</span>
+        {% else %}
+          <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">Empty</span>
+        {% endif %}
+      </div>
+
+      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        <a href="{% url 'ops_search:search' %}" class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200 hover:bg-slate-100">
+          <div class="text-sm font-semibold">Universal Search</div>
+          <div class="mt-1 text-sm text-slate-600">Find customer/order/txn/refund/dispute.</div>
+        </a>
+        <a href="{% url 'alerts:list' %}" class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200 hover:bg-slate-100">
+          <div class="text-sm font-semibold">Alerts</div>
+          <div class="mt-1 text-sm text-slate-600">Due soon / at risk / overdue warnings.</div>
+        </a>
+      </div>
+
+      <div class="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
+        <div class="font-semibold">Transactions imported</div>
+        <div class="mt-1 text-slate-600">{{ tx_count }} transactions</div>
+      </div>
+    </div>
+
+    <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+      <div class="text-sm font-semibold">Refund SLA setting</div>
+      <div class="mt-1 text-sm text-slate-600">Controls expected refund completion date.</div>
+
+      <form method="post" action="{% url 'update_sla' %}" class="mt-4 space-y-3">
+        {% csrf_token %}
+        <div>
+          <label class="text-xs text-slate-500">SLA (days)</label>
+          <input name="sla_days" type="number" min="1" max="60" value="{{ sla_days }}"
+                 class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-900/10" />
+        </div>
+        <button class="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+          Update SLA
+        </button>
+        {% if workspace_role != "admin" %}
+          <div class="text-xs text-slate-500">Only admins can update SLA.</div>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+{% endblock %}

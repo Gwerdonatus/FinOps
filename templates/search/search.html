@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load risk_badge %}
+
+{% block title %}Search • FinOps Ops Console{% endblock %}
+
+{% block content %}
+  <div>
+    <h1 class="text-2xl font-semibold tracking-tight">Universal Search</h1>
+    <p class="mt-1 text-sm text-slate-600">Search by transaction ID, order ID, refund ID, dispute ID, or customer email.</p>
+  </div>
+
+  <form method="get" class="mt-5 flex gap-2">
+    <input name="q" value="{{ q }}" placeholder="e.g. txn_demo_001 or customer@example.com"
+           class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-900/10" />
+    <button class="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800">Search</button>
+  </form>
+
+  {% if q %}
+    <div class="mt-6 grid gap-4 lg:grid-cols-2">
+      <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+        <div class="text-sm font-semibold">Customer</div>
+        {% if result.customer %}
+          <div class="mt-3 text-sm">
+            <div class="font-semibold">{{ result.customer.name|default:"Customer" }}</div>
+            <div class="text-slate-600">{{ result.customer.email|default:result.customer.external_id }}</div>
+          </div>
+        {% else %}
+          <div class="mt-3 text-sm text-slate-500">No customer match.</div>
+        {% endif %}
+      </div>
+
+      <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+        <div class="text-sm font-semibold">Refunds</div>
+        <div class="mt-3 space-y-2">
+          {% for r in result.refunds %}
+            <a href="{% url 'ops_refunds:detail' r.id %}" class="block rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200 hover:bg-slate-100">
+              <div class="flex items-center justify-between">
+                <div class="font-mono text-xs text-slate-700">{{ r.external_id }}</div>
+                <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 {{ r.risk_state|risk_badge_class }}">
+                  {{ r.risk_state|cut:"_" }}
+                </span>
+              </div>
+              <div class="mt-1 text-sm">{{ r.amount }} {{ r.currency }}</div>
+            </a>
+          {% empty %}
+            <div class="text-sm text-slate-500">No refunds.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+        <div class="text-sm font-semibold">Transactions</div>
+        <div class="mt-3 space-y-2">
+          {% for t in result.transactions %}
+            <div class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <div class="font-mono text-xs text-slate-700">{{ t.external_id }}</div>
+              <div class="mt-1 text-sm">{{ t.amount }} {{ t.currency }} • {{ t.status }}</div>
+            </div>
+          {% empty %}
+            <div class="text-sm text-slate-500">No transactions.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+        <div class="text-sm font-semibold">Disputes</div>
+        <div class="mt-3 space-y-2">
+          {% for d in result.disputes %}
+            <a href="{% url 'ops_disputes:detail' d.id %}" class="block rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200 hover:bg-slate-100">
+              <div class="font-mono text-xs text-slate-700">{{ d.external_id }}</div>
+              <div class="mt-1 text-sm">{{ d.amount }} {{ d.currency }} • {{ d.status }}</div>
+            </a>
+          {% empty %}
+            <div class="text-sm text-slate-500">No disputes.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

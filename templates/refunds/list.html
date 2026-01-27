@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load risk_badge %}
+
+{% block title %}Refunds • FinOps Ops Console{% endblock %}
+
+{% block content %}
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight">Refunds</h1>
+      <p class="mt-1 text-sm text-slate-600">Monitor SLA risk and act before chargebacks.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {% for s in statuses %}
+        {% if s == "ALL" %}
+          <a href="{% url 'ops_refunds:list' %}"
+             class="rounded-full px-3 py-1 text-sm ring-1 {% if not filter_status %}bg-slate-900 text-white ring-slate-900{% else %}bg-white text-slate-700 ring-slate-200 hover:bg-slate-50{% endif %}">
+            All
+          </a>
+        {% else %}
+          <a href="{% url 'ops_refunds:list' %}?status={{ s }}"
+             class="rounded-full px-3 py-1 text-sm ring-1 {% if filter_status == s %}bg-slate-900 text-white ring-slate-900{% else %}bg-white text-slate-700 ring-slate-200 hover:bg-slate-50{% endif %}">
+            {{ s|capfirst|cut:"_" }}
+          </a>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="mt-6 overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+          <tr>
+            <th class="px-4 py-3">Risk</th>
+            <th class="px-4 py-3">Refund</th>
+            <th class="px-4 py-3">Customer</th>
+            <th class="px-4 py-3">Amount</th>
+            <th class="px-4 py-3">Initiated</th>
+            <th class="px-4 py-3">Expected by</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for r in refunds %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 {{ r.risk_state|risk_badge_class }}">
+                  {{ r.risk_state|cut:"_" }}
+                </span>
+              </td>
+              <td class="px-4 py-3 font-mono text-xs text-slate-700">{{ r.external_id }}</td>
+              <td class="px-4 py-3">
+                {% if r.customer %}{{ r.customer.email|default:r.customer.external_id }}{% else %}<span class="text-slate-400">—</span>{% endif %}
+              </td>
+              <td class="px-4 py-3">{{ r.amount }} {{ r.currency }}</td>
+              <td class="px-4 py-3">{{ r.initiated_at|date:"Y-m-d" }}</td>
+              <td class="px-4 py-3">{% if r.expected_by %}{{ r.expected_by|date:"Y-m-d" }}{% else %}<span class="text-slate-400">—</span>{% endif %}</td>
+              <td class="px-4 py-3 text-right">
+                <a class="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+                   href="{% url 'ops_refunds:detail' r.id %}">View</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td class="px-4 py-8 text-center text-slate-500" colspan="7">No refunds found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

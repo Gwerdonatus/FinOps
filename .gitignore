@@ -1,22 +1,7 @@
-.venv/
-__pycache__/
-*.pyc
-.env
-*.sqlite3
-staticfiles/
-media/
-.pytest_cache/
-.coverage
-dist/
-build/
-*.egg-info/
-
-
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
+*.log
 
 # Virtual environments
 env/
@@ -24,21 +9,27 @@ venv/
 .venv/
 
 # Django
-*.log
-local_settings.py
 db.sqlite3
+media/
+test_media/
 
 # Environment variables
 .env
 .env.*
 
-# OS files
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build / static
+staticfiles/
+
+# OS
 .DS_Store
 Thumbs.db
 
 # IDEs
 .vscode/
 .idea/
-
-# Migrations (optional – only if team agrees)
-# */migrations/__pycache__/

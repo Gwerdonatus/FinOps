@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load risk_badge %}
+
+{% block title %}Refund {{ refund.external_id }} • FinOps Ops Console{% endblock %}
+
+{% block content %}
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <div class="text-xs text-slate-500">Refund</div>
+      <h1 class="mt-1 text-xl font-semibold tracking-tight font-mono">{{ refund.external_id }}</h1>
+      <div class="mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 {{ refund.risk_state|risk_badge_class }}">
+        {{ refund.risk_state|cut:"_" }}
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'ops_refunds:list' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50">
+        Back
+      </a>
+    </div>
+  </div>
+
+  <div class="mt-6 grid gap-4 md:grid-cols-3">
+    <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+      <div class="text-xs text-slate-500">Amount</div>
+      <div class="mt-2 text-lg font-semibold">{{ refund.amount }} {{ refund.currency }}</div>
+      <div class="mt-3 text-xs text-slate-500">Provider</div>
+      <div class="mt-1 text-sm">{{ refund.provider }}</div>
+    </div>
+
+    <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+      <div class="text-xs text-slate-500">Initiated</div>
+      <div class="mt-2 text-sm font-semibold">{{ refund.initiated_at }}</div>
+      <div class="mt-3 text-xs text-slate-500">Expected by</div>
+      <div class="mt-1 text-sm font-semibold">{% if refund.expected_by %}{{ refund.expected_by }}{% else %}—{% endif %}</div>
+    </div>
+
+    <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+      <div class="text-xs text-slate-500">Customer</div>
+      <div class="mt-2 text-sm font-semibold">
+        {% if refund.customer %}{{ refund.customer.email|default:refund.customer.external_id }}{% else %}—{% endif %}
+      </div>
+      <div class="mt-3 text-xs text-slate-500">Status</div>
+      <div class="mt-1 text-sm">{{ refund.status }}</div>
+    </div>
+  </div>
+
+  <div class="mt-6 rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+    <div class="text-sm font-semibold">Linked objects</div>
+    <div class="mt-4 grid gap-3 md:grid-cols-3">
+      <div class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+        <div class="text-xs text-slate-500">Order</div>
+        <div class="mt-1 text-sm font-mono">{% if refund.order %}{{ refund.order.external_id }}{% else %}—{% endif %}</div>
+      </div>
+      <div class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+        <div class="text-xs text-slate-500">Transaction</div>
+        <div class="mt-1 text-sm font-mono">{% if refund.transaction %}{{ refund.transaction.external_id }}{% else %}—{% endif %}</div>
+      </div>
+      <div class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+        <div class="text-xs text-slate-500">Raw payload</div>
+        <div class="mt-1 text-xs text-slate-600">Stored for provenance (demo).</div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{# ====== alerts/list.html (redesigned list page) ====== #}
+{% extends "base.html" %}
+{% load risk_badge %}
+
+{% block title %}Alerts • FinOps Ops Console{% endblock %}
+
+{% block content %}
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Alerts</h1>
+      <p class="mt-1 text-sm text-slate-600">High-signal warnings to prevent disputes and churn.</p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <a href="{% url 'dashboard' %}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+        Back to dashboard
+      </a>
+      <form method="post" action="{% url 'alerts:mark_all_read' %}">
+        {% csrf_token %}
+        <button class="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800">
+          Mark all read
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Clean container so list never feels "hidden" -->
+  <div class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-5 py-3">
+      <div class="text-sm font-semibold text-slate-900">Alert feed</div>
+      <div class="text-xs text-slate-500">Newest first</div>
+    </div>
+
+    {% if alerts %}
+      <ul class="divide-y divide-slate-200">
+        {% for a in alerts %}
+          <li class="group px-5 py-4 hover:bg-slate-50">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 {{ a.severity|severity_badge_class }}">
+                    {{ a.severity|capfirst }}
+                  </span>
+
+                  <div class="text-sm font-semibold text-slate-900">
+                    {{ a.get_type_display }}
+                  </div>
+                </div>
+
+                <div class="mt-1 text-sm leading-relaxed text-slate-600">
+                  {{ a.message }}
+                </div>
+
+                <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  <span class="rounded-full bg-slate-100 px-2 py-1 ring-1 ring-slate-200">
+                    {{ a.entity_type }} #{{ a.entity_id }}
+                  </span>
+                  <span class="hidden h-1 w-1 rounded-full bg-slate-300 sm:inline-block"></span>
+                  <span>{{ a.created_at|date:"M j, Y · H:i" }}</span>
+                </div>
+              </div>
+
+              <!-- Right rail (always visible, doesn’t “hide”) -->
+              <div class="shrink-0">
+                <a
+                  href="{% url 'ops_search:search' %}?q={{ a.entity_id }}"
+                  class="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto"
+                  title="Open in Search"
+                >
+                  View in Search →
+                </a>
+              </div>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="px-5 py-10 text-center">
+        <div class="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-700 ring-1 ring-slate-200">🔔</div>
+        <div class="mt-3 text-sm font-semibold text-slate-900">No alerts right now</div>
+        <div class="mt-1 text-sm text-slate-600">When something needs attention, it’ll show up here.</div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

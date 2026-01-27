@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Exports · FinOps Ops Console{% endblock %}
+{% block app_content %}
+<div class="flex items-start justify-between gap-4">
+  <div>
+    <h1 class="text-2xl font-semibold">Exports</h1>
+    <p class="text-slate-600 mt-1">Generate reports for ops and evidence packs for disputes.</p>
+  </div>
+
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'exports:refunds_overdue_pdf' %}" class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800">
+      Export Overdue Refunds (PDF)
+    </a>
+    <a href="{% url 'exports:refunds_overdue_csv' %}" class="px-4 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50">
+      Export Overdue Refunds (CSV)
+    </a>
+  </div>
+</div>
+
+<div class="mt-6 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+  <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+    <h2 class="font-semibold">Export history</h2>
+    <span class="text-sm text-slate-500">Latest 200</span>
+  </div>
+
+  {% if exports %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50 text-slate-600">
+        <tr>
+          <th class="text-left font-medium px-4 py-3">Type</th>
+          <th class="text-left font-medium px-4 py-3">Status</th>
+          <th class="text-left font-medium px-4 py-3">Created</th>
+          <th class="text-right font-medium px-4 py-3">Action</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for e in exports %}
+        <tr class="hover:bg-slate-50/60">
+          <td class="px-4 py-3">{{ e.type }}</td>
+          <td class="px-4 py-3">
+            {% if e.status == 'ready' %}
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Ready</span>
+            {% elif e.status == 'failed' %}
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200">Failed</span>
+            {% else %}
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-50 text-slate-700 border border-slate-200">Queued</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-slate-600">{{ e.created_at|date:"Y-m-d H:i" }}</td>
+          <td class="px-4 py-3 text-right">
+            {% if e.status == 'ready' and e.file_path %}
+              <a class="font-medium text-slate-900 hover:underline" href="{% url 'exports:download' e.id %}">Download</a>
+            {% else %}
+              <span class="text-slate-400">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div class="p-6 text-slate-600">No exports yet. Generate one using the buttons above.</div>
+  {% endif %}
+</div>
+{% endblock %}

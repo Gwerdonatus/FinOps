@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% block title %}Connections · FinOps Ops Console{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight">Connections</h1>
+      <p class="mt-1 text-sm text-slate-600">
+        Connect payment + commerce providers to power refund risk monitoring and unified search.
+      </p>
+    </div>
+    {% if demo_mode %}
+      <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-200">
+        Demo mode (Stripe seed enabled)
+      </span>
+    {% endif %}
+  </div>
+
+  <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+
+    <!-- Stripe (Demo-enabled) -->
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <div class="grid h-9 w-9 place-items-center rounded-xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100">💳</div>
+            <div class="text-sm font-semibold">Stripe</div>
+          </div>
+          <div class="mt-2 text-xs text-slate-600">
+            Use a <span class="font-semibold">test key</span> for recording. Save key → Test → Sync or Seed demo.
+          </div>
+        </div>
+
+        {% if stripe_conn and stripe_conn.status == "connected" %}
+          <span class="rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">Connected</span>
+        {% else %}
+          <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">Not connected</span>
+        {% endif %}
+      </div>
+
+      <form class="mt-4 space-y-3" method="post" action="{% url 'providers:connect' 'stripe' %}">
+        {% csrf_token %}
+        <label class="block text-xs font-semibold text-slate-700">Secret key</label>
+        <input
+          name="secret_key"
+          type="password"
+          autocomplete="new-password"
+          autocapitalize="off"
+          spellcheck="false"
+          class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+          placeholder="sk_test_..."
+        />
+        <button class="w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+          Save key
+        </button>
+      </form>
+
+      <div class="mt-3 grid grid-cols-2 gap-2">
+        <form method="post" action="{% url 'providers:test' 'stripe' %}">{% csrf_token %}
+          <button class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">Test</button>
+        </form>
+        <form method="post" action="{% url 'providers:sync' 'stripe' %}">{% csrf_token %}
+          <button class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">Sync</button>
+        </form>
+      </div>
+
+      {% if demo_mode %}
+        <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <div class="text-xs font-semibold text-amber-900">Screen recording helper</div>
+          <div class="mt-1 text-xs text-amber-800">
+            Generates 250 Stripe test transactions + refunds, then syncs them into your dashboard.
+          </div>
+
+          <form class="mt-3" method="post" action="{% url 'providers:stripe_seed_demo' %}">
+            {% csrf_token %}
+            <button class="w-full rounded-xl bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
+              Generate 250 demo transactions
+            </button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Shopify -->
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <div class="grid h-9 w-9 place-items-center rounded-xl bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100">🛍️</div>
+            <div class="text-sm font-semibold">Shopify</div>
+          </div>
+          <div class="mt-2 text-xs text-slate-600">
+            Connect using a <span class="font-semibold">Custom App</span> Admin API token.
+          </div>
+        </div>
+
+        {% if shopify_conn and shopify_conn.status == "connected" %}
+          <span class="rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">Connected</span>
+        {% else %}
+          <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">Not connected</span>
+        {% endif %}
+      </div>
+
+      <form class="mt-4 space-y-3" method="post" action="{% url 'providers:connect' 'shopify' %}">
+        {% csrf_token %}
+        <div>
+          <label class="block text-xs font-semibold text-slate-700">Shop domain</label>
+          <input
+            name="shop_domain"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            placeholder="your-store.myshopify.com"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700">Admin API token</label>
+          <input
+            name="admin_token"
+            type="password"
+            autocomplete="new-password"
+            autocapitalize="off"
+            spellcheck="false"
+            class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            placeholder="shpat_..."
+          />
+        </div>
+
+        <button class="w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+          Save credentials
+        </button>
+      </form>
+
+      <div class="mt-3 grid grid-cols-2 gap-2">
+        <form method="post" action="{% url 'providers:test' 'shopify' %}">{% csrf_token %}
+          <button class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">Test</button>
+        </form>
+        <form method="post" action="{% url 'providers:sync' 'shopify' %}">{% csrf_token %}
+          <button class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">Sync</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Paystack -->
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <div class="grid h-9 w-9 place-items-center rounded-xl bg-sky-50 text-sky-700 ring-1 ring-sky-100">🇳🇬</div>
+            <div class="text-sm font-semibold">Paystack</div>
+          </div>
+          <div class="mt-2 text-xs text-slate-600">
+            Connect using your Paystack secret key (test/live).
+          </div>
+        </div>
+
+        {% if paystack_conn and paystack_conn.status == "connected" %}
+          <span class="rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">Connected</span>
+        {% else %}
+          <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">Not connected</span>
+        {% endif %}
+      </div>
+
+      <form class="mt-4 space-y-3" method="post" action="{% url 'providers:connect' 'paystack' %}">
+        {% csrf_token %}
+        <label class="block text-xs font-semibold text-slate-700">Secret key</label>
+        <input
+          name="secret_key"
+          type="password"
+          autocomplete="new-password"
+          autocapitalize="off"
+          spellcheck="false"
+          class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+          placeholder="sk_test_... or sk_live_..."
+        />
+        <button class="w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+          Save key
+        </button>
+      </form>
+
+      <div class="mt-3 grid grid-cols-2 gap-2">
+        <form method="post" action="{% url 'providers:test' 'paystack' %}">{% csrf_token %}
+          <button class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">Test</button>
+        </form>
+        <form method="post" action="{% url 'providers:sync' 'paystack' %}">{% csrf_token %}
+          <button class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50">Sync</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- PayPal (UI only) -->
+    <div class="rounded-2xl border border-dashed border-slate-200 bg-white p-5 shadow-sm opacity-90">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <div class="grid h-9 w-9 place-items-center rounded-xl bg-yellow-50 text-yellow-800 ring-1 ring-yellow-100">🅿️</div>
+            <div class="text-sm font-semibold">PayPal</div>
+          </div>
+          <div class="mt-2 text-xs text-slate-600">
+            UI is ready. Integration coming soon.
+          </div>
+        </div>
+        <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+          Coming soon
+        </span>
+      </div>
+
+      <div class="mt-4 space-y-3">
+        <label class="block text-xs font-semibold text-slate-400">Client ID</label>
+        <input disabled class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="paypal_client_id" />
+        <label class="block text-xs font-semibold text-slate-400">Client secret</label>
+        <input disabled class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="paypal_client_secret" />
+        <button disabled class="w-full cursor-not-allowed rounded-xl bg-slate-200 px-3 py-2 text-sm font-semibold text-slate-500">
+          Save (soon)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clean instructions section (outside cards) -->
+  <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <div class="text-sm font-semibold">How to connect each provider</div>
+        <div class="mt-1 text-sm text-slate-600">Use these steps when onboarding a client or recording the demo.</div>
+      </div>
+      <div class="text-xs text-slate-500">Tip: Save → Test → Sync</div>
+    </div>
+
+    <div class="mt-5 grid gap-4 md:grid-cols-3">
+      <div class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+        <div class="text-xs font-semibold text-slate-900">Stripe</div>
+        <ol class="mt-2 list-decimal space-y-1 pl-5 text-xs text-slate-700">
+          <li>Get your key from Stripe Dashboard → Developers → API keys</li>
+          <li>Paste <span class="font-semibold">sk_test_...</span> → Save key</li>
+          <li>Click <span class="font-semibold">Test</span> → then <span class="font-semibold">Sync</span></li>
+          {% if demo_mode %}
+            <li>For demo: click <span class="font-semibold">Generate 250 demo transactions</span></li>
+          {% endif %}
+        </ol>
+      </div>
+
+      <div class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+        <div class="text-xs font-semibold text-slate-900">Shopify</div>
+        <ol class="mt-2 list-decimal space-y-1 pl-5 text-xs text-slate-700">
+          <li>Shopify Admin → Apps → App and sales channel settings</li>
+          <li>Create a <span class="font-semibold">Custom App</span></li>
+          <li>Enable Admin API scopes → Install app</li>
+          <li>Copy Admin API access token → Save → Test → Sync</li>
+        </ol>
+      </div>
+
+      <div class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+        <div class="text-xs font-semibold text-slate-900">Paystack</div>
+        <ol class="mt-2 list-decimal space-y-1 pl-5 text-xs text-slate-700">
+          <li>Paystack Dashboard → Settings → API Keys & Webhooks</li>
+          <li>Copy secret key (<span class="font-semibold">sk_test_</span> recommended for demo)</li>
+          <li>Save → Test → Sync</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="text-sm font-semibold">Recommended demo flow</div>
+    <ol class="mt-2 list-decimal space-y-1 pl-5 text-sm text-slate-700">
+      <li>Stripe → paste <span class="font-semibold">sk_test_...</span> → Save key</li>
+      <li>Stripe → click <span class="font-semibold">Test</span> (status becomes Connected)</li>
+      <li>Stripe → click <span class="font-semibold">Generate 250 demo transactions</span></li>
+      <li>Go back to Dashboard → watch metrics and alerts populate</li>
+    </ol>
+  </div>
+</div>
+{% endblock %}

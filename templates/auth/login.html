@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login • FinOps Ops Console</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <body class="min-h-screen bg-slate-950 text-white">
+    <div class="absolute inset-0 -z-10 bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900"></div>
+
+    <div class="mx-auto flex min-h-screen max-w-md items-center px-4">
+      <div class="w-full rounded-3xl bg-white/10 p-6 ring-1 ring-white/15">
+        <div class="mb-2 text-sm text-white/70">FinOps Ops Console</div>
+        <h1 class="text-2xl font-semibold tracking-tight">Sign in</h1>
+        <p class="mt-2 text-sm text-white/75">Use the demo login or your account credentials.</p>
+
+        {% if messages %}
+          <div class="mt-4 space-y-2">
+            {% for message in messages %}
+              <div class="rounded-xl bg-white/10 px-4 py-3 text-sm ring-1 ring-white/15">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <form method="post" class="mt-6 space-y-4">
+          {% csrf_token %}
+          <div>
+            <label class="text-xs text-white/70">Email / Username</label>
+            <input name="username" autocomplete="username" required
+                   class="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-white/20" />
+          </div>
+          <div>
+            <label class="text-xs text-white/70">Password</label>
+            <input name="password" type="password" autocomplete="current-password" required
+                   class="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-white/20" />
+          </div>
+          <button class="w-full rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-white/90">
+            Login
+          </button>
+        </form>
+
+        <div class="mt-5 rounded-2xl bg-white/10 p-4 text-sm ring-1 ring-white/15">
+          <div class="font-semibold">Demo login</div>
+          <div class="mt-1 text-white/80">demo@finops.local • demo1234</div>
+        </div>
+
+        <div class="mt-6 text-center text-xs text-white/60">
+          <a href="{% url 'landing' %}" class="underline decoration-white/30 hover:decoration-white/60">Back to homepage</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

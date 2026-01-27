@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Disputes • FinOps Ops Console{% endblock %}
+
+{% block content %}
+  <div>
+    <h1 class="text-2xl font-semibold tracking-tight">Disputes</h1>
+    <p class="mt-1 text-sm text-slate-600">Minimal dispute context + evidence checklist (exports in later phase).</p>
+  </div>
+
+  <div class="mt-6 overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+          <tr>
+            <th class="px-4 py-3">Dispute</th>
+            <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3">Amount</th>
+            <th class="px-4 py-3">Deadline</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for d in disputes %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-3 font-mono text-xs text-slate-700">{{ d.external_id }}</td>
+              <td class="px-4 py-3">{{ d.status }}</td>
+              <td class="px-4 py-3">{{ d.amount }} {{ d.currency }}</td>
+              <td class="px-4 py-3">{% if d.deadline_at %}{{ d.deadline_at|date:"Y-m-d" }}{% else %}<span class="text-slate-400">—</span>{% endif %}</td>
+              <td class="px-4 py-3 text-right">
+                <a class="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+                   href="{% url 'ops_disputes:detail' d.id %}">View</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td class="px-4 py-8 text-center text-slate-500" colspan="5">No disputes found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

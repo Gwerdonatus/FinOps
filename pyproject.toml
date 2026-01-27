@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "finops-console"
+version = "0.1.0"
+description = "FinOps Ops Console (Phase 1 + Phase 2)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "Django>=5.0,<6.0",
+  "python-dotenv>=1.0",
+  "dj-database-url>=2.2",
+  "psycopg[binary]>=3.2",
+  "whitenoise>=6.7",
+  "reportlab>=4.0",
+  "requests>=2.32",
+  "stripe>=10.0",
+  "cryptography>=43.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "pytest-django>=4.8",
+  "ruff>=0.6.0",
+  "black>=24.0",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.dev"
+python_files = ["test_*.py"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["apps*", "config*"]

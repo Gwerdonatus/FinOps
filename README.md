@@ -1,162 +1,138 @@
-# FinOps Ops Console (Phase 1 + Phase 2)
+# FinOps Ops Console  
+### Refund & Dispute Operations Dashboard (Demo-Ready)
 
-This repo includes:
+FinOps Ops Console is an **operations-focused fintech dashboard** designed to help merchants and support teams **track refunds early, manage risk, and prevent chargebacks** before revenue is lost.
 
-- **Phase 1 foundation**: Django project scaffold, auth, workspace scoping middleware, placeholder modules.
-- **Phase 2 upgrades (demo-ready)**:
-  - Public marketing homepage (landing page) at `/`
-  - Tailwind-styled UI (via CDN) for clean screen recordings
-  - Refund SLA risk states (SAFE / DUE_SOON / AT_RISK / OVERDUE)
-  - Alerts feed for **due soon** + **overdue** refunds
-  - Universal search (by ID or customer email)
-  - Minimal dispute context page + evidence checklist (no uploads/exports yet)
-
-> Provider integrations, background jobs, PDF exports are intentionally **not** included yet.
+This project was built to explore a real operational gap in payment platforms:  
+refunds are time-sensitive, but most teams only react *after* problems escalate.
 
 ---
 
-## 1) Local setup (Bash)
+## Why This Exists (Problem Statement)
 
-### 1.1 Create folder + open in VS Code
+In most payment stacks (Stripe, Shopify, Paystack):
+
+- Refunds arrive as **emails or isolated events**
+- There is no clear **refund deadline visibility**
+- Teams don’t know which refunds are **about to become disputes**
+- Searching across customer, transaction, refund, and order data is fragmented
+- By the time a dispute appears, **the damage is already done**
+
+Most chargebacks are not fraud —  
+they happen because **refunds were missed or delayed**.
+
+**FinOps Ops Console treats refunds as an operational workflow, not just a payment event.**
+
+---
+
+## What This Project Does
+
+FinOps Ops Console provides a **single operational view** for refund and dispute risk across payment providers.
+
+### Core Capabilities
+
+- Refund SLA tracking with clear risk states
+- Automated risk classification:
+  - `SAFE`
+  - `DUE_SOON`
+  - `AT_RISK`
+  - `OVERDUE`
+- Alerting system for time-sensitive refunds
+- Universal search across:
+  - Customer email
+  - Transaction ID
+  - Refund ID
+  - Order ID
+- Provider demo seeding for realistic testing and screen recordings
+
+---
+
+## Project Phases Overview
+
+### Phase 1 — Foundation
+- Django project scaffold
+- Authentication + workspace scoping
+- Core domain models (transactions, refunds, alerts)
+- Clean app-based architecture
+
+---
+
+### Phase 2 — Ops UX + Risk Logic
+- Public marketing landing page (`/`)
+- Tailwind-styled UI (via CDN for fast iteration)
+- Refund SLA logic
+- Refund risk states:
+  - SAFE
+  - DUE_SOON
+  - AT_RISK
+  - OVERDUE
+- Alerts feed for due-soon and overdue refunds
+- Universal search (by email or ID)
+- Minimal dispute context page (checklist-style)
+
+> At this stage, the system already behaves like a real ops tool — even without live providers.
+
+---
+
+### Phase 3 — Planned
+- Background jobs (Celery + Redis)
+- Evidence uploads + PDF exports
+- Webhook-driven updates
+- Deeper dispute workflows
+
+---
+
+### Phase 4 — Provider Connections + Demo Mode (Implemented)
+
+This phase makes the project **fully demo-ready**.
+
+- Provider connections UI (Stripe, Shopify, Paystack)
+- Encrypted credential storage
+- Stripe demo seeding:
+  - Generates 250 Stripe test payments
+  - Automatically creates refunds
+  - Syncs everything into the dashboard
+  - Time-shifts refunds to naturally produce:
+    - SAFE
+    - DUE_SOON
+    - AT_RISK
+    - OVERDUE
+- Alerts trigger automatically based on risk state
+
+This allows **realistic demos without mocked data**.
+
+---
+
+## Tech Stack
+
+### Backend
+- **Django**
+- **PostgreSQL** (SQLite fallback)
+- **Stripe API**
+- Encrypted provider credentials
+- Time-based risk modeling
+- Idempotent sync logic
+
+### Frontend
+- Django Templates
+- Tailwind CSS (CDN)
+- Dashboard-first UX
+- Alert-driven navigation
+
+### Infrastructure & Tooling
+- Docker & Docker Compose
+- Redis (included, optional for now)
+- Pytest
+- Environment-based configuration
+
+---
+
+## Local Setup
+
+### 1) Clone or unzip
 
 ```bash
-# Create a folder anywhere you want
 mkdir -p finops_console
 cd finops_console
-
-# (Option A) If you downloaded the zip, unzip it here
-# unzip finops_console_phase12.zip
-
-# Open in VS Code (make sure `code` command is enabled)
 code .
-```
-
-If `code .` doesn't work:
-
-- In VS Code: press **Ctrl+Shift+P** → type **Shell Command: Install 'code' command in PATH** → run it.
-- Restart your terminal, then run `code .` again.
-
----
-
-## 2) Python + venv
-
-```bash
-python3 --version   # should be 3.11+
-python3 -m venv .venv
-source .venv/bin/activate
-
-pip install -U pip
-pip install -e ".[dev]"
-```
-
----
-
-## 3) Environment variables
-
-```bash
-cp .env.example .env
-```
-
-You can run on SQLite (default) or Postgres (recommended for realism).  
-If you want Postgres, continue to section 4.
-
----
-
-## 4) Postgres + Redis (docker-compose)
-
-```bash
-docker compose up -d
-```
-
-This starts:
-
-- Postgres on `localhost:5432`
-- Redis on `localhost:6379` (included but not used yet)
-
-If you use docker Postgres, ensure `.env` has:
-
-```
-DATABASE_URL=postgres://finops:finops@127.0.0.1:5432/finops_console
-```
-
----
-
-## 5) Migrations + seed data (demo user)
-
-```bash
-python manage.py migrate
-python manage.py seed_dev
-```
-
-Demo credentials:
-
-- **Username**: `demo@finops.local`
-- **Password**: `demo1234`
-
----
-
-## 6) Run the server
-
-```bash
-python manage.py runserver
-```
-
-Open:
-
-- Public landing page: `http://127.0.0.1:8000/`
-- Login: `http://127.0.0.1:8000/login/`
-- App dashboard: `http://127.0.0.1:8000/app/`
-
----
-
-## 7) Run tests
-
-```bash
-pytest
-```
-
----
-
-## 8) Useful commands
-
-Recalculate refund risk (and create alerts):
-
-```bash
-python manage.py shell -c "from apps.workspaces.models import Workspace; from apps.ops_refunds.services.risk import recalc_refund_risk_for_workspace; ws=Workspace.objects.first(); recalc_refund_risk_for_workspace(ws); print('done')"
-```
-
----
-
-## Routes
-
-- `/` → marketing landing page
-- `/login/` → login
-- `/app/` → dashboard
-- `/app/refunds/` → refund list + detail pages
-- `/app/search/` → unified search
-- `/app/alerts/` → alerts feed
-- `/app/disputes/` → dispute list + detail (checklist)
-
----
-
-## What’s next (Phase 3)
-
-- Real provider integrations (Stripe/Paystack/Shopify)
-- Evidence uploads + exportable evidence packs (PDF)
-- Async jobs + scheduled checks (Celery/Redis)
-
-
-## Phase 4: Provider Connections + Demo Seed (Option 1)
-
-- Set `DEMO_MODE=1` and generate an `ENCRYPTION_KEY` in `.env`.
-- Go to **Connections** in the app nav.
-- Add a **Stripe test secret key** (`sk_test_...`).
-- Click **Generate 250 demo transactions** to create Stripe test objects, then auto-sync them.
-- Dashboard + Refunds + Alerts will populate and become demo-ready.
-
-### Generate ENCRYPTION_KEY
-
-```bash
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-```
-# FinOps
+![Screenshot_27-1-2026_19759_127 0 0 1](https://github.com/user-attachments/assets/a1ee2c08-bfc4-4b88-b725-e532d88ba25b)

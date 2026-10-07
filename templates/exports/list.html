@@ -8,12 +8,18 @@
   </div>
 
   <div class="flex flex-wrap gap-2">
-    <a href="{% url 'exports:refunds_overdue_pdf' %}" class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800">
-      Export Overdue Refunds (PDF)
-    </a>
-    <a href="{% url 'exports:refunds_overdue_csv' %}" class="px-4 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50">
-      Export Overdue Refunds (CSV)
-    </a>
+    <form method="post" action="{% url 'exports:refunds_overdue_pdf' %}">
+      {% csrf_token %}
+      <button type="submit" class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800">
+        Export Overdue Refunds (PDF)
+      </button>
+    </form>
+    <form method="post" action="{% url 'exports:refunds_overdue_csv' %}">
+      {% csrf_token %}
+      <button type="submit" class="px-4 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50">
+        Export Overdue Refunds (CSV)
+      </button>
+    </form>
   </div>
 </div>
 

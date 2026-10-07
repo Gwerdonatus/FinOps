@@ -6,9 +6,14 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from apps.exports.models import ExportPack
-from apps.exports.services import create_dispute_evidence_pack_pdf, create_overdue_refunds_csv, create_overdue_refunds_pdf
+from apps.exports.services import (
+    create_dispute_evidence_pack_pdf,
+    create_overdue_refunds_csv,
+    create_overdue_refunds_pdf,
+)
 from apps.ops_disputes.models import Dispute
 
 
@@ -20,6 +25,7 @@ def exports_list(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+@require_POST
 def export_overdue_refunds_pdf(request: HttpRequest) -> HttpResponse:
     ws = request.workspace
     create_overdue_refunds_pdf(ws.id)
@@ -28,6 +34,7 @@ def export_overdue_refunds_pdf(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+@require_POST
 def export_overdue_refunds_csv(request: HttpRequest) -> HttpResponse:
     ws = request.workspace
     create_overdue_refunds_csv(ws.id)
@@ -36,6 +43,7 @@ def export_overdue_refunds_csv(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+@require_POST
 def export_dispute_evidence_pack(request: HttpRequest, dispute_id: int) -> HttpResponse:
     ws = request.workspace
     dispute = get_object_or_404(Dispute, id=dispute_id, workspace=ws)

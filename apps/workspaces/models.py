@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
 
+
 class Workspace(models.Model):
     name = models.CharField(max_length=120)
     slug = models.SlugField(max_length=140, unique=True)
@@ -16,6 +17,7 @@ class Workspace(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
 
 class Membership(models.Model):
     ROLE_ADMIN = "admin"

@@ -1,5 +1,5 @@
-from pathlib import Path
 import os
+from pathlib import Path
 
 import dj_database_url
 from dotenv import load_dotenv
@@ -11,7 +11,11 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-secret-key")
 DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
 
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+    if h.strip()
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -101,7 +105,7 @@ LOGOUT_REDIRECT_URL = "landing"
 
 
 # Demo mode
-DEMO_MODE = os.getenv('DEMO_MODE', '0') == '1'
+DEMO_MODE = os.getenv("DEMO_MODE", "0") == "1"
 
 # Provider credential encryption
-ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY', '')
+ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY", "")

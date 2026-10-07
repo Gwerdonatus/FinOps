@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from .models import Alert
 
 
-def alerts_nav(request) -> Dict[str, Any]:
+def alerts_nav(request) -> dict[str, Any]:
     ws = getattr(request, "workspace", None)
     if not request.user.is_authenticated or not ws:
         return {"unread_alert_count": 0, "nav_alerts": []}

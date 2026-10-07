@@ -11,7 +11,6 @@ from apps.ops_disputes.models import Dispute
 from apps.ops_refunds.models import Customer, Order, PaymentTransaction, Refund
 from apps.workspaces.models import Membership, Workspace
 
-
 pytestmark = pytest.mark.django_db
 
 
@@ -29,10 +28,19 @@ def attach_membership(user, workspace, role="admin"):
 
 
 def seed_overdue_refund(workspace):
-    cust = Customer.objects.create(workspace=workspace, external_id="cus_overdue", email="buyer@ex.com", name="Buyer")
-    order = Order.objects.create(workspace=workspace, external_id="ord_overdue", customer=cust, amount=1000, currency="NGN")
+    cust = Customer.objects.create(
+        workspace=workspace, external_id="cus_overdue", email="buyer@ex.com", name="Buyer"
+    )
+    order = Order.objects.create(
+        workspace=workspace, external_id="ord_overdue", customer=cust, amount=1000, currency="NGN"
+    )
     txn = PaymentTransaction.objects.create(
-        workspace=workspace, external_id="txn_overdue", customer=cust, order=order, amount=1000, currency="NGN"
+        workspace=workspace,
+        external_id="txn_overdue",
+        customer=cust,
+        order=order,
+        amount=1000,
+        currency="NGN",
     )
     return Refund.objects.create(
         workspace=workspace,
@@ -51,10 +59,19 @@ def seed_overdue_refund(workspace):
 
 
 def seed_dispute(workspace):
-    cust = Customer.objects.create(workspace=workspace, external_id="cus_d", email="d@e.com", name="D")
-    order = Order.objects.create(workspace=workspace, external_id="ord_d", customer=cust, amount=2000, currency="NGN")
+    cust = Customer.objects.create(
+        workspace=workspace, external_id="cus_d", email="d@e.com", name="D"
+    )
+    order = Order.objects.create(
+        workspace=workspace, external_id="ord_d", customer=cust, amount=2000, currency="NGN"
+    )
     txn = PaymentTransaction.objects.create(
-        workspace=workspace, external_id="txn_d", customer=cust, order=order, amount=2000, currency="NGN"
+        workspace=workspace,
+        external_id="txn_d",
+        customer=cust,
+        order=order,
+        amount=2000,
+        currency="NGN",
     )
     dispute = Dispute.objects.create(
         workspace=workspace,
@@ -82,10 +99,14 @@ def test_generate_overdue_refunds_pdf(client, settings):
     seed_overdue_refund(ws)
 
     client.login(username=user.username, password="pass1234")
-    resp = client.get(reverse("exports:refunds_overdue_pdf"))
+    assert client.get(reverse("exports:refunds_overdue_pdf")).status_code == 405
+
+    resp = client.post(reverse("exports:refunds_overdue_pdf"))
     assert resp.status_code == 302
 
-    exp = ExportPack.objects.filter(workspace=ws, type="refund_overdue_report_pdf").latest("created_at")
+    exp = ExportPack.objects.filter(workspace=ws, type="refund_overdue_report_pdf").latest(
+        "created_at"
+    )
     assert exp.status == "ready"
     assert exp.file_path
     p = Path(exp.file_path)
@@ -102,7 +123,10 @@ def test_generate_dispute_evidence_pack_pdf(client):
     dispute = seed_dispute(ws)
 
     client.login(username=user.username, password="pass1234")
-    resp = client.get(reverse("exports:dispute_evidence_pack", kwargs={"dispute_id": dispute.id}))
+    url = reverse("exports:dispute_evidence_pack", kwargs={"dispute_id": dispute.id})
+    assert client.get(url).status_code == 405
+
+    resp = client.post(url)
     assert resp.status_code == 302
 
     exp = ExportPack.objects.filter(workspace=ws, type="evidence_pack_pdf").latest("created_at")

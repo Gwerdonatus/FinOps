@@ -15,9 +15,11 @@ SEVERITY_CLASS = {
     "danger": "bg-red-100 text-red-800 ring-red-200",
 }
 
+
 @register.filter
 def risk_badge_class(risk_state: str) -> str:
     return RISK_CLASS.get(risk_state, "bg-slate-100 text-slate-800 ring-slate-200")
+
 
 @register.filter
 def severity_badge_class(severity: str) -> str:

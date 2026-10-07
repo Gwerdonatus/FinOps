@@ -1,21 +1,19 @@
 from __future__ import annotations
 
 import csv
-import os
+from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
-from typing import Iterable
 
 from django.conf import settings
 from django.utils import timezone
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
 
 from apps.exports.models import ExportPack
 from apps.ops_disputes.models import Dispute
 from apps.ops_refunds.models import Refund
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import mm
-from reportlab.pdfgen import canvas
 
 
 @dataclass(frozen=True)
@@ -107,7 +105,9 @@ def create_overdue_refunds_csv(workspace_id: int) -> ExportResult:
 
 
 def create_dispute_evidence_pack_pdf(dispute_id: int) -> ExportResult:
-    dispute = Dispute.objects.select_related("workspace", "customer", "order", "transaction").get(id=dispute_id)
+    dispute = Dispute.objects.select_related("workspace", "customer", "order", "transaction").get(
+        id=dispute_id
+    )
     ws_id = dispute.workspace_id
     filename = _safe_filename(f"evidence_pack_{dispute.external_id}", "pdf")
     abs_path = _exports_dir() / filename
@@ -139,7 +139,7 @@ def _render_overdue_refunds_pdf(abs_path: Path, refunds: Iterable[Refund]) -> No
     col_x = [20 * mm, 55 * mm, 80 * mm, 110 * mm, 140 * mm, 170 * mm]
 
     c.setFont("Helvetica-Bold", 9)
-    for hx, htxt in zip(col_x, headers):
+    for hx, htxt in zip(col_x, headers, strict=True):
         c.drawString(hx, y, htxt)
     y -= 5 * mm
     c.setLineWidth(0.3)
@@ -153,7 +153,7 @@ def _render_overdue_refunds_pdf(abs_path: Path, refunds: Iterable[Refund]) -> No
             c.showPage()
             y = height - 20 * mm
             c.setFont("Helvetica-Bold", 9)
-            for hx, htxt in zip(col_x, headers):
+            for hx, htxt in zip(col_x, headers, strict=True):
                 c.drawString(hx, y, htxt)
             y -= 5 * mm
             c.line(20 * mm, y, width - 20 * mm, y)
@@ -209,10 +209,16 @@ def _render_evidence_pack_pdf(abs_path: Path, dispute: Dispute) -> None:
         c.drawString(20 * mm, y, f"Customer: {cust.email or '-'}  {cust.name or ''}")
         y -= 5 * mm
     if dispute.order:
-        c.drawString(20 * mm, y, f"Order: {dispute.order.external_id}  Status: {dispute.order.status}")
+        c.drawString(
+            20 * mm, y, f"Order: {dispute.order.external_id}  Status: {dispute.order.status}"
+        )
         y -= 5 * mm
     if dispute.transaction:
-        c.drawString(20 * mm, y, f"Transaction: {dispute.transaction.external_id}  Status: {dispute.transaction.status}")
+        c.drawString(
+            20 * mm,
+            y,
+            f"Transaction: {dispute.transaction.external_id}  Status: {dispute.transaction.status}",
+        )
         y -= 5 * mm
 
     y -= 4 * mm

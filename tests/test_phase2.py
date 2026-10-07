@@ -5,11 +5,10 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.workspaces.models import Workspace, Membership
-from apps.ops_refunds.models import Customer, Order, PaymentTransaction, Refund
-from apps.ops_refunds.services.risk import apply_risk
 from apps.alerts.models import Alert
-
+from apps.ops_refunds.models import Customer, Order, PaymentTransaction, Refund
+from apps.ops_refunds.services.risk import apply_risk, apply_risk_for_workspace
+from apps.workspaces.models import Membership, Workspace
 
 pytestmark = pytest.mark.django_db
 
@@ -29,10 +28,19 @@ def attach_membership(user, workspace, role="admin"):
 
 
 def seed_refund(workspace, initiated_at=None, external_id="ref_1"):
-    cust = Customer.objects.create(workspace=workspace, external_id="cus_1", email="c@e.com", name="C")
-    order = Order.objects.create(workspace=workspace, external_id="ord_1", customer=cust, amount=1000, currency="NGN")
+    cust = Customer.objects.create(
+        workspace=workspace, external_id="cus_1", email="c@e.com", name="C"
+    )
+    order = Order.objects.create(
+        workspace=workspace, external_id="ord_1", customer=cust, amount=1000, currency="NGN"
+    )
     txn = PaymentTransaction.objects.create(
-        workspace=workspace, external_id="txn_1", customer=cust, order=order, amount=1000, currency="NGN"
+        workspace=workspace,
+        external_id="txn_1",
+        customer=cust,
+        order=order,
+        amount=1000,
+        currency="NGN",
     )
     return Refund.objects.create(
         workspace=workspace,
@@ -113,7 +121,9 @@ def test_nav_pages_200(client):
 
 def test_refund_risk_transition_creates_alert():
     ws = make_workspace(sla_days=7)
-    refund = seed_refund(ws, initiated_at=timezone.now() - timedelta(days=10), external_id="ref_overdue_test")
+    refund = seed_refund(
+        ws, initiated_at=timezone.now() - timedelta(days=10), external_id="ref_overdue_test"
+    )
 
     old_state, new_state = apply_risk(refund, ws.sla_days)
     assert new_state in ("OVERDUE", "AT_RISK", "DUE_SOON", "SAFE")
@@ -121,6 +131,32 @@ def test_refund_risk_transition_creates_alert():
     # For this setup it should be overdue
     assert Refund.objects.get(id=refund.id).risk_state == "OVERDUE"
     assert Alert.objects.filter(workspace=ws, type=Alert.TYPE_REFUND_OVERDUE).exists()
+
+
+def test_apply_risk_for_workspace_updates_only_changed_refunds():
+    ws = make_workspace(sla_days=7)
+    overdue = seed_refund(
+        ws,
+        initiated_at=timezone.now() - timedelta(days=10),
+        external_id="ref_workspace_overdue",
+    )
+
+    updated = apply_risk_for_workspace(ws.id)
+
+    overdue.refresh_from_db()
+    assert updated == 1
+    assert overdue.risk_state == Refund.RISK_OVERDUE
+    assert overdue.expected_by is not None
+
+    assert apply_risk_for_workspace(ws.id) == 0
+    assert (
+        Alert.objects.filter(
+            workspace=ws,
+            type=Alert.TYPE_REFUND_OVERDUE,
+            entity_id=overdue.id,
+        ).count()
+        == 1
+    )
 
 
 def test_mark_all_read_endpoint(client):
@@ -140,6 +176,8 @@ def test_mark_all_read_endpoint(client):
     )
     assert Alert.objects.filter(workspace=ws, is_read=False).count() == 1
 
-    resp = client.get(reverse("alerts:mark_all_read"))
+    assert client.get(reverse("alerts:mark_all_read")).status_code == 405
+
+    resp = client.post(reverse("alerts:mark_all_read"))
     assert resp.status_code in (301, 302)
     assert Alert.objects.filter(workspace=ws, is_read=False).count() == 0

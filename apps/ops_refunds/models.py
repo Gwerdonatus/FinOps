@@ -3,6 +3,7 @@ from django.utils import timezone
 
 from apps.workspaces.models import Workspace
 
+
 class Customer(models.Model):
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
     external_id = models.CharField(max_length=120)
@@ -16,6 +17,7 @@ class Customer(models.Model):
 
     def __str__(self) -> str:
         return self.email or self.external_id
+
 
 class Order(models.Model):
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
@@ -33,6 +35,7 @@ class Order(models.Model):
 
     def __str__(self) -> str:
         return self.external_id
+
 
 class PaymentTransaction(models.Model):
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
@@ -53,6 +56,7 @@ class PaymentTransaction(models.Model):
     def __str__(self) -> str:
         return self.external_id
 
+
 class Refund(models.Model):
     RISK_SAFE = "SAFE"
     RISK_DUE_SOON = "DUE_SOON"
@@ -68,7 +72,9 @@ class Refund(models.Model):
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
     provider = models.CharField(max_length=30, default="stripe")
     external_id = models.CharField(max_length=120)
-    transaction = models.ForeignKey(PaymentTransaction, on_delete=models.SET_NULL, null=True, blank=True)
+    transaction = models.ForeignKey(
+        PaymentTransaction, on_delete=models.SET_NULL, null=True, blank=True
+    )
     order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True)
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
     amount = models.BigIntegerField(default=0)

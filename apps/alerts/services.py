@@ -1,5 +1,7 @@
 from django.utils import timezone
+
 from .models import Alert
+
 
 def create_alert(*, workspace, type, severity, entity_type, entity_id, message) -> Alert:
     return Alert.objects.create(

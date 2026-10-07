@@ -8,9 +8,12 @@
   </div>
 
   <div class="flex gap-2">
-    <a href="{% url 'exports:dispute_evidence_pack' dispute.id %}" class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800">
-      Generate Evidence Pack (PDF)
-    </a>
+    <form method="post" action="{% url 'exports:dispute_evidence_pack' dispute.id %}">
+      {% csrf_token %}
+      <button type="submit" class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800">
+        Generate Evidence Pack (PDF)
+      </button>
+    </form>
     <a href="{% url 'ops_disputes:list' %}" class="px-4 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50">
       Back to Disputes
     </a>

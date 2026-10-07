@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import stripe
 
@@ -17,25 +17,31 @@ class StripeClient:
         # Use account default API version; you can pin if desired.
         self._stripe = stripe
 
-    def test_connection(self) -> Dict[str, Any]:
+    def test_connection(self) -> dict[str, Any]:
         acct = self._stripe.Account.retrieve()
         return {"id": acct.get("id"), "email": acct.get("email"), "country": acct.get("country")}
 
-    def list_payment_intents(self, created_gte: Optional[int] = None, limit: int = 100) -> List[Dict[str, Any]]:
-        params: Dict[str, Any] = {"limit": limit}
+    def list_payment_intents(
+        self, created_gte: int | None = None, limit: int = 100
+    ) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"limit": limit}
         if created_gte:
             params["created"] = {"gte": created_gte}
         res = self._stripe.PaymentIntent.list(**params)
         return list(res.auto_paging_iter())
 
-    def list_refunds(self, created_gte: Optional[int] = None, limit: int = 100) -> List[Dict[str, Any]]:
-        params: Dict[str, Any] = {"limit": limit}
+    def list_refunds(
+        self, created_gte: int | None = None, limit: int = 100
+    ) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"limit": limit}
         if created_gte:
             params["created"] = {"gte": created_gte}
         res = self._stripe.Refund.list(**params)
         return list(res.auto_paging_iter())
 
-    def create_demo_payment_intent(self, *, amount: int, currency: str, email: str) -> Dict[str, Any]:
+    def create_demo_payment_intent(
+        self, *, amount: int, currency: str, email: str
+    ) -> dict[str, Any]:
         customer = self._stripe.Customer.create(email=email)
         pi = self._stripe.PaymentIntent.create(
             amount=amount,
@@ -48,7 +54,9 @@ class StripeClient:
         )
         return pi
 
-    def create_refund_for_payment_intent(self, payment_intent_id: str, amount: Optional[int] = None) -> Dict[str, Any]:
+    def create_refund_for_payment_intent(
+        self, payment_intent_id: str, amount: int | None = None
+    ) -> dict[str, Any]:
         # Need a charge id to refund. PaymentIntent includes latest_charge.
         pi = self._stripe.PaymentIntent.retrieve(payment_intent_id)
         charge_id = pi.get("latest_charge")
@@ -59,5 +67,9 @@ class StripeClient:
                 charge_id = charges[0].get("id")
         if not charge_id:
             raise RuntimeError("Could not locate charge for payment intent to refund.")
-        refund = self._stripe.Refund.create(charge=charge_id, amount=amount) if amount else self._stripe.Refund.create(charge=charge_id)
+        refund = (
+            self._stripe.Refund.create(charge=charge_id, amount=amount)
+            if amount
+            else self._stripe.Refund.create(charge=charge_id)
+        )
         return refund

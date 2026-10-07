@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime as dt
 import random
-from typing import Tuple
 
 import stripe
 from django.conf import settings
@@ -11,10 +10,10 @@ from django.utils import timezone
 from apps.ops_refunds.models import Customer, Order, PaymentTransaction, Refund
 from apps.providers.models import ProviderConnection
 
-
 # =========================================================
 # Risk + Alerts helpers (DEMO-friendly + deterministic)
 # =========================================================
+
 
 def _compute_expected_by(refund: Refund) -> dt.datetime:
     """
@@ -117,6 +116,7 @@ def _apply_risk_and_alerts(refund: Refund) -> None:
 # Demo shift helper (this is what creates mixed states)
 # =========================================================
 
+
 def _demo_time_shift(refund: Refund) -> None:
     """
     DEMO_MODE only:
@@ -142,12 +142,15 @@ def _demo_time_shift(refund: Refund) -> None:
     refund.expected_by = _compute_expected_by(refund)
     refund.last_provider_update_at = timezone.now()
 
-    refund.save(update_fields=["initiated_at", "expected_by", "last_provider_update_at", "raw_payload"])
+    refund.save(
+        update_fields=["initiated_at", "expected_by", "last_provider_update_at", "raw_payload"]
+    )
 
 
 # =========================================================
 # Stripe helpers
 # =========================================================
+
 
 def _stripe_key(conn: ProviderConnection) -> str:
     creds = conn.get_credentials()
@@ -162,7 +165,7 @@ def stripe_test_connection(conn: ProviderConnection) -> dict:
     return stripe.Account.retrieve()
 
 
-def stripe_seed_demo_data(conn: ProviderConnection, *, count: int = 250) -> Tuple[int, int]:
+def stripe_seed_demo_data(conn: ProviderConnection, *, count: int = 250) -> tuple[int, int]:
     """
     Create demo PaymentIntents and some Refunds in Stripe TEST mode.
     """

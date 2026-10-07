@@ -1,10 +1,13 @@
 from django.contrib import admin
-from .models import Workspace, Membership
+
+from .models import Membership, Workspace
+
 
 @admin.register(Workspace)
 class WorkspaceAdmin(admin.ModelAdmin):
     list_display = ("name", "slug", "timezone", "sla_days", "created_at")
     search_fields = ("name", "slug")
+
 
 @admin.register(Membership)
 class MembershipAdmin(admin.ModelAdmin):

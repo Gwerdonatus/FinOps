@@ -1,15 +1,18 @@
 from django.db import models
 from django.utils import timezone
 
-from apps.workspaces.models import Workspace
 from apps.ops_refunds.models import Customer, Order, PaymentTransaction
+from apps.workspaces.models import Workspace
+
 
 class Dispute(models.Model):
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
     provider = models.CharField(max_length=30, default="stripe")
     external_id = models.CharField(max_length=120)
 
-    transaction = models.ForeignKey(PaymentTransaction, on_delete=models.SET_NULL, null=True, blank=True)
+    transaction = models.ForeignKey(
+        PaymentTransaction, on_delete=models.SET_NULL, null=True, blank=True
+    )
     order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True)
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
 
@@ -27,6 +30,7 @@ class Dispute(models.Model):
     def __str__(self) -> str:
         return self.external_id
 
+
 class EvidenceItem(models.Model):
     dispute = models.ForeignKey(Dispute, on_delete=models.CASCADE, related_name="evidence_items")
     type = models.CharField(max_length=40)  # e.g., policy, comms, delivery, refund_proof
@@ -35,6 +39,7 @@ class EvidenceItem(models.Model):
 
     def __str__(self) -> str:
         return f"{self.dispute.external_id}:{self.type}"
+
 
 class EvidenceFile(models.Model):
     item = models.ForeignKey(EvidenceItem, on_delete=models.CASCADE, related_name="files")

@@ -2,6 +2,9 @@
 __pycache__/
 *.py[cod]
 *.log
+*.egg-info/
+.coverage
+coverage.xml
 
 # Virtual environments
 env/
@@ -24,7 +27,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # Build / static
-staticfiles/
+staticfiles/*
+!staticfiles/.gitkeep
 
 # OS
 .DS_Store

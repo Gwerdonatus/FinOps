@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
 import datetime as dt
+from dataclasses import dataclass
+from typing import Any
 
 import requests
 
@@ -19,19 +19,25 @@ class ShopifyClient:
         self.creds = creds
         self.base_url = f"https://{creds.shop_domain}/admin/api/{creds.api_version}"
         self.session = requests.Session()
-        self.session.headers.update({
-            "X-Shopify-Access-Token": creds.admin_token,
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        })
+        self.session.headers.update(
+            {
+                "X-Shopify-Access-Token": creds.admin_token,
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            }
+        )
 
-    def test_connection(self) -> Dict[str, Any]:
+    def test_connection(self) -> dict[str, Any]:
         r = self.session.get(f"{self.base_url}/shop.json", timeout=20)
         r.raise_for_status()
         shop = r.json().get("shop", {})
-        return {"name": shop.get("name"), "domain": shop.get("domain"), "currency": shop.get("currency")}
+        return {
+            "name": shop.get("name"),
+            "domain": shop.get("domain"),
+            "currency": shop.get("currency"),
+        }
 
-    def list_orders(self, days: int = 30, limit: int = 250) -> List[Dict[str, Any]]:
+    def list_orders(self, days: int = 30, limit: int = 250) -> list[dict[str, Any]]:
         created_min = (dt.datetime.utcnow() - dt.timedelta(days=days)).isoformat() + "Z"
         params = {"status": "any", "limit": limit, "created_at_min": created_min}
         r = self.session.get(f"{self.base_url}/orders.json", params=params, timeout=30)

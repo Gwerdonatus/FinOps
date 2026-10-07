@@ -1,5 +1,7 @@
 from django.contrib import admin
+
 from .models import ProviderConnection
+
 
 @admin.register(ProviderConnection)
 class ProviderConnectionAdmin(admin.ModelAdmin):

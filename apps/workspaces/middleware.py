@@ -1,9 +1,9 @@
 from django.http import HttpRequest
-from django.shortcuts import redirect
 
-from .models import Membership, Workspace
+from .models import Membership
 
 SESSION_KEY = "active_workspace_id"
+
 
 class ActiveWorkspaceMiddleware:
     def __init__(self, get_response):

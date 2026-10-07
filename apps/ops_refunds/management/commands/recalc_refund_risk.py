@@ -1,5 +1,4 @@
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 
 from apps.ops_refunds.models import Refund
 from apps.ops_refunds.services.risk import apply_risk_for_workspace
@@ -22,4 +21,6 @@ class Command(BaseCommand):
         total = 0
         for wid in ws_ids:
             total += apply_risk_for_workspace(wid)
-        self.stdout.write(self.style.SUCCESS(f"Updated {total} refunds across {len(set(ws_ids))} workspaces"))
+        self.stdout.write(
+            self.style.SUCCESS(f"Updated {total} refunds across {len(set(ws_ids))} workspaces")
+        )

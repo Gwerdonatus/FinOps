@@ -2,6 +2,7 @@ from django.db import models
 
 from apps.workspaces.models import Workspace
 
+
 class ProviderConnection(models.Model):
     PROVIDER_STRIPE = "stripe"
     PROVIDER_PAYSTACK = "paystack"
@@ -34,11 +35,12 @@ class ProviderConnection(models.Model):
     def __str__(self) -> str:
         return f"{self.workspace}:{self.provider} ({self.status})"
 
-
     def set_credentials(self, data: dict) -> None:
         from apps.providers.services.crypto import encrypt_json
+
         self.credentials_encrypted = encrypt_json(data)
 
     def get_credentials(self) -> dict:
         from apps.providers.services.crypto import decrypt_json
+
         return decrypt_json(self.credentials_encrypted)

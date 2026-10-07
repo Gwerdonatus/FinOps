@@ -10,6 +10,7 @@ from apps.workspaces.models import Workspace
 
 from .forms import PaystackConnectForm, ShopifyConnectForm, StripeConnectForm
 from .models import ProviderConnection
+from .paystack.client import PaystackClient, PaystackCredentials
 from .services.crypto import CredentialEncryptionError
 from .services.sync import (
     stripe_seed_demo_data,
@@ -17,7 +18,6 @@ from .services.sync import (
     stripe_test_connection,
 )
 from .shopify.client import ShopifyClient, ShopifyCredentials
-from .paystack.client import PaystackClient, PaystackCredentials
 
 
 def _get_or_create_conn(ws: Workspace, provider: str) -> ProviderConnection:
@@ -215,7 +215,9 @@ def sync_provider(request: HttpRequest, provider: str) -> HttpResponse:
 
     # Require "Connected" (verified) before sync.
     if conn.status != ProviderConnection.STATUS_CONNECTED:
-        messages.error(request, "Please click Test first. Sync is only available after verification.")
+        messages.error(
+            request, "Please click Test first. Sync is only available after verification."
+        )
         return redirect("providers:connections")
 
     try:
@@ -244,7 +246,9 @@ def sync_provider(request: HttpRequest, provider: str) -> HttpResponse:
             creds = conn.get_credentials() or {}
             client = PaystackClient(PaystackCredentials(secret_key=creds["secret_key"]))
             txns = client.list_transactions(days=30, per_page=10, page=1)
-            messages.success(request, f"Paystack sync wiring next. Retrieved {len(txns)} transactions.")
+            messages.success(
+                request, f"Paystack sync wiring next. Retrieved {len(txns)} transactions."
+            )
             return redirect("providers:connections")
 
         messages.error(request, "Unsupported provider.")
@@ -274,13 +278,18 @@ def stripe_seed_demo(request: HttpRequest) -> HttpResponse:
 
     # Require verified Stripe connection first.
     if conn.status != ProviderConnection.STATUS_CONNECTED:
-        messages.error(request, "Please click Test on Stripe first. Demo seed is only available after verification.")
+        messages.error(
+            request,
+            "Please click Test on Stripe first. Demo seed is only available after verification.",
+        )
         return redirect("providers:connections")
 
     try:
         secret_key = _safe_get_secret_key(conn)
         if not secret_key:
-            messages.error(request, "No Stripe key saved. Paste your sk_test_... key and click Save key first.")
+            messages.error(
+                request, "No Stripe key saved. Paste your sk_test_... key and click Save key first."
+            )
             return redirect("providers:connections")
 
         if not secret_key.startswith("sk_test_"):
@@ -288,10 +297,16 @@ def stripe_seed_demo(request: HttpRequest) -> HttpResponse:
             return redirect("providers:connections")
 
         created_pis, created_refunds = stripe_seed_demo_data(conn, count=250)
-        messages.success(request, f"Generated {created_pis} demo payments and {created_refunds} refunds in Stripe.")
+        messages.success(
+            request,
+            f"Generated {created_pis} demo payments and {created_refunds} refunds in Stripe.",
+        )
 
         result = stripe_sync_last_days(conn, days=30)
-        messages.success(request, f"Synced into dashboard: {result['transactions']} txns, {result['refunds']} refunds.")
+        messages.success(
+            request,
+            f"Synced into dashboard: {result['transactions']} txns, {result['refunds']} refunds.",
+        )
 
     except CredentialEncryptionError as exc:
         messages.error(request, str(exc))

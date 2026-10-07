@@ -71,9 +71,8 @@ def recalc_refund_risk_for_workspace(workspace: Workspace):
 def apply_risk_for_workspace(workspace_id: int) -> int:
     qs = Refund.objects.filter(workspace_id=workspace_id).select_related("workspace")
     updated = 0
-    for r in qs:
-        old = r.risk_state
-        new = apply_risk(r)
-        if old != new:
+    for refund in qs:
+        old_state, new_state = apply_risk(refund, refund.workspace.sla_days)
+        if old_state != new_state:
             updated += 1
     return updated

@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict
+from typing import Any
 
 from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
@@ -21,13 +21,13 @@ def _get_fernet() -> Fernet:
         raise CredentialEncryptionError("Invalid ENCRYPTION_KEY format.") from exc
 
 
-def encrypt_json(payload: Dict[str, Any]) -> str:
+def encrypt_json(payload: dict[str, Any]) -> str:
     data = json.dumps(payload).encode("utf-8")
     token = _get_fernet().encrypt(data)
     return token.decode("utf-8")
 
 
-def decrypt_json(token: str) -> Dict[str, Any]:
+def decrypt_json(token: str) -> dict[str, Any]:
     """
     Returns a dict of credentials.
 

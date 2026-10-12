@@ -1,11 +1,11 @@
-from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
 from apps.accounts import views as account_views
+from apps.providers.webhooks import stripe_webhook
 
 urlpatterns = [
+    path("webhooks/stripe/<int:connection_id>/", stripe_webhook, name="stripe_webhook"),
     path("health/", account_views.health, name="health"),
     path("admin/", admin.site.urls),
     # Public
@@ -23,7 +23,3 @@ urlpatterns = [
     path("app/exports/", include("apps.exports.urls")),
     path("app/alerts/", include("apps.alerts.urls")),
 ]
-
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -233,12 +233,14 @@ def _render_evidence_pack_pdf(abs_path: Path, dispute: Dispute) -> None:
         content.append(_paragraph(item.notes or "No notes recorded."))
         for file in item.files.all():
             content.append(_paragraph(f"File reference: {file.filename}"))
+            if file.sha256:
+                content.append(_paragraph(f"SHA256: {file.sha256}"))
         content.append(Spacer(1, 3 * mm))
     content.extend(
         [
             Spacer(1, 5 * mm),
             _paragraph(
-                "This summary is not proof that evidence is complete or that a dispute has been won. File upload and provider submission are not implemented."
+                "This summary is not proof that evidence is complete or that a dispute has been won. Attachments are retained privately in FinOps; their contents require review. This report has not been submitted to a provider."
             ),
         ]
     )

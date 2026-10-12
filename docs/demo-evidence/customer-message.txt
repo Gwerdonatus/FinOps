@@ -1,0 +1,8 @@
+FINOPS SYNTHETIC DEMO EVIDENCE
+Case: demo_dispute_1
+Order: demo_order_4
+
+Customer message: I have not received my order. Please confirm its delivery status.
+Operations note: Delivery has not been verified. No carrier receipt is attached.
+
+This staged document is for demonstration only. It does not prove delivery, create a refund or submit a dispute response.

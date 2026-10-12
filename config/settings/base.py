@@ -109,3 +109,9 @@ DEMO_MODE = os.getenv("DEMO_MODE", "0") == "1"
 
 # Provider credential encryption
 ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY", "")
+
+# Optional case-brief service. No case is sent without an explicit generation request.
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 512 * 1024

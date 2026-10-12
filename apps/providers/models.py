@@ -28,6 +28,9 @@ class ProviderConnection(models.Model):
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default=STATUS_DISCONNECTED)
     credentials_encrypted = models.TextField(blank=True, default="")  # placeholder for Phase 1/2
     last_sync_at = models.DateTimeField(null=True, blank=True)
+    last_sync_attempt_at = models.DateTimeField(null=True, blank=True)
+    sync_error = models.CharField(max_length=200, blank=True, default="")
+    account_id = models.CharField(max_length=80, blank=True, default="")
 
     class Meta:
         unique_together = ("workspace", "provider")
@@ -44,3 +47,16 @@ class ProviderConnection(models.Model):
         from apps.providers.services.crypto import decrypt_json
 
         return decrypt_json(self.credentials_encrypted)
+
+
+class StripeWebhookEvent(models.Model):
+    connection = models.ForeignKey(ProviderConnection, on_delete=models.CASCADE)
+    external_id = models.CharField(max_length=120)
+    received_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["connection", "external_id"], name="unique_stripe_webhook"
+            )
+        ]

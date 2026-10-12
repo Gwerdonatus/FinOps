@@ -1,19 +1,17 @@
-# Provider connector scope
+# Connector scope
 
-The local recruiter demo uses synthetic records and needs no provider credentials.
+## Stripe sandbox
 
-## Stripe
+FinOps imports existing sandbox charges, refunds and disputes. It creates no provider payments, refunds or dispute submissions. An admin saves a `sk_test_` key in Connections, selects Test to verify the account, then Sync. The periodic worker repeats synchronization every five minutes. Status includes account ID, last attempt, last success and sanitized errors.
 
-Connections lets a workspace store an encrypted Stripe credential, test account access and manually synchronize payment/refund records. Saving a key does not mark the provider connected; a successful test does.
+Webhook route: `/webhooks/stripe/<connection_id>/`. Configure the endpoint's own signing secret in the Stripe card. A local endpoint requires Stripe CLI forwarding; a hosted endpoint requires HTTPS. Do not reuse a different application's signing secret. Duplicate signed events are deduplicated; current resource state is fetched from Stripe.
 
-Use sandbox credentials for demonstrations. The optional 250-payment seed creates external Stripe test objects and test refunds; it is separate from `python manage.py seed_demo`. It is not required for the local walkthrough and should not be mistaken for production activity. Its time-shifted refund deadlines are staged.
+Existing sandbox credentials were reused locally with the owner's authorization. Read-only import returned three payments and no refunds/disputes. Other staged cases remain synthetic. External delivery is not configured; signed local delivery and retry behavior are tested.
 
-Live connection code exists but is not covered by this local demo's runtime verification. Do not use this prototype to administer live funds without further hardening.
+## OpenAI
 
-## Shopify and Paystack
+Admins configure a key in Connections → OpenAI case briefs. Each case asks for explicit source sharing before generation. This environment intentionally has no OpenAI key yet; API transport/schema/error paths are tested with mocked responses.
 
-Credential validation and provider read/list adapters exist. Complete import into the refund/dispute domain is not implemented; the UI labels these limits. PayPal is a placeholder. These providers are not represented as working end-to-end integrations.
+## Other providers
 
-## Credential handling
-
-Set a Fernet `ENCRYPTION_KEY` in ignored `.env`. Stored connection credentials are encrypted in PostgreSQL. Keep a secure backup of the key; replacing it without migration makes existing credentials unreadable. Do not expose keys in screenshots, commit them or put them in URLs.
+Shopify and Paystack retain existing credential/test/list adapters. Full record imports are unfinished. PayPal is a placeholder. Neither adapter is part of the verified Stripe release.

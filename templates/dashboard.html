@@ -33,12 +33,12 @@
         </a>
       </div>
       <div class="mt-4 text-sm text-slate-700">
-        Recommended for demo: Stripe → Save test key → Test → Generate 250 demo transactions.
+        Recommended for demo: Stripe → Save sandbox key → Test → Sync existing records.
       </div>
     </div>
   {% endif %}
 
-  {% if is_synthetic %}<div class="mt-6 rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900">Demo data · Four staged refund deadlines and one dispute. No live financial actions.</div>{% endif %}
+  {% if is_synthetic %}<div class="mt-6 rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900">Sandbox workspace · Includes staged demo records and any imported Stripe test records. No live financial actions.</div>{% endif %}
   <div class="mt-6 grid gap-4 md:grid-cols-4">
     <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
       <div class="text-xs text-slate-500">Safe</div>
@@ -65,7 +65,7 @@
           <div class="text-sm font-semibold">Workspace status</div>
           <div class="mt-1 text-sm text-slate-600">
             {% if has_data %}
-              {% if is_synthetic %}Synthetic demo records. No provider payments or refunds were created.{% else %}Imported provider records are loaded.{% endif %}
+              {% if is_synthetic %}Synthetic and sandbox records only. FinOps does not create provider payments or refunds.{% else %}Imported provider records are loaded.{% endif %}
             {% else %}
               No transactions yet — connect and sync to populate metrics.
             {% endif %}

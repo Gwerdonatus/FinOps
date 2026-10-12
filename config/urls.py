@@ -6,6 +6,7 @@ from django.urls import include, path
 from apps.accounts import views as account_views
 
 urlpatterns = [
+    path("health/", account_views.health, name="health"),
     path("admin/", admin.site.urls),
     # Public
     path("", account_views.landing, name="landing"),

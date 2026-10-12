@@ -33,6 +33,8 @@ def _compute_risk_state(refund: Refund) -> str:
     - DUE_SOON: due in <= 72h
     - SAFE otherwise
     """
+    if refund.status in {"succeeded", "canceled", "cancelled"}:
+        return Refund.RISK_SAFE
     now = timezone.now()
     expected_by = refund.expected_by or _compute_expected_by(refund)
     delta = expected_by - now

@@ -1,47 +1,19 @@
-# Connector setup (Stripe / Shopify / Paystack)
+# Provider connector scope
 
-This repo supports **real provider connections**. For the demo video you can connect Stripe in **test mode** and generate demo data.
+The local recruiter demo uses synthetic records and needs no provider credentials.
 
-## Stripe (recommended for demo)
+## Stripe
 
-1. Create a Stripe account (or use an existing one).
-2. Switch to **Developers → API keys** and copy your **test** secret key (`sk_test_...`).
-3. In the app: **Connections → Stripe → Save key**
-4. (Demo) Click **Generate 250 demo transactions**. This creates Stripe test objects and auto-syncs them.
+Connections lets a workspace store an encrypted Stripe credential, test account access and manually synchronize payment/refund records. Saving a key does not mark the provider connected; a successful test does.
 
-## Shopify (token-based, no OAuth required for MVP)
+Use sandbox credentials for demonstrations. The optional 250-payment seed creates external Stripe test objects and test refunds; it is separate from `python manage.py seed_demo`. It is not required for the local walkthrough and should not be mistaken for production activity. Its time-shifted refund deadlines are staged.
 
-This uses a standard Shopify pattern: a **Custom App** with an Admin API token.
+Live connection code exists but is not covered by this local demo's runtime verification. Do not use this prototype to administer live funds without further hardening.
 
-1. In Shopify admin: **Settings → Apps and sales channels → Develop apps**
-2. Create a **Custom App**
-3. Configure **Admin API scopes** (minimum for read-only demo):
-   - `read_orders`
-   - `read_customers`
-4. Install the app and copy the **Admin API access token** (`shpat_...`)
-5. In the app: **Connections → Shopify**
-   - Shop domain: `your-store.myshopify.com`
-   - Admin token: `shpat_...`
-   - Click **Test**
+## Shopify and Paystack
 
-## Paystack (token-based)
+Credential validation and provider read/list adapters exist. Complete import into the refund/dispute domain is not implemented; the UI labels these limits. PayPal is a placeholder. These providers are not represented as working end-to-end integrations.
 
-1. In Paystack dashboard: **Settings → API Keys & Webhooks**
-2. Copy your **test** secret key (`sk_test_...`) for demo/dev.
-3. In the app: **Connections → Paystack → Save key → Test**
+## Credential handling
 
-## Security
-
-Provider credentials are stored encrypted using Fernet (`cryptography`). Set `ENCRYPTION_KEY` in `.env`:
-
-```bash
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-```
-
-Then put that output into:
-
-```env
-ENCRYPTION_KEY=...
-```
-
-**Never commit real keys** to GitHub.
+Set a Fernet `ENCRYPTION_KEY` in ignored `.env`. Stored connection credentials are encrypted in PostgreSQL. Keep a secure backup of the key; replacing it without migration makes existing credentials unreadable. Do not expose keys in screenshots, commit them or put them in URLs.

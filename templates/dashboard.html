@@ -19,7 +19,7 @@
     </div>
   </div>
 
-  {% if not has_connection %}
+  {% if not has_connection and not is_synthetic %}
     <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
       <div class="flex items-start justify-between gap-4">
         <div>
@@ -38,6 +38,7 @@
     </div>
   {% endif %}
 
+  {% if is_synthetic %}<div class="mt-6 rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900">Demo data · Four staged refund deadlines and one dispute. No live financial actions.</div>{% endif %}
   <div class="mt-6 grid gap-4 md:grid-cols-4">
     <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
       <div class="text-xs text-slate-500">Safe</div>
@@ -45,11 +46,11 @@
     </div>
     <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
       <div class="text-xs text-slate-500">Due soon</div>
-      <div class="mt-2 text-3xl font-semibold">{{ counts.DUE_SOON|default:"0" }}</div>
+      <div class="mt-2 text-3xl font-semibold text-amber-600">{{ counts.DUE_SOON|default:"0" }}</div>
     </div>
     <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
       <div class="text-xs text-slate-500">At risk</div>
-      <div class="mt-2 text-3xl font-semibold">{{ counts.AT_RISK|default:"0" }}</div>
+      <div class="mt-2 text-3xl font-semibold text-orange-600">{{ counts.AT_RISK|default:"0" }}</div>
     </div>
     <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
       <div class="text-xs text-slate-500">Overdue</div>
@@ -64,7 +65,7 @@
           <div class="text-sm font-semibold">Workspace status</div>
           <div class="mt-1 text-sm text-slate-600">
             {% if has_data %}
-              Live data is loaded from connected providers.
+              {% if is_synthetic %}Synthetic demo records. No provider payments or refunds were created.{% else %}Imported provider records are loaded.{% endif %}
             {% else %}
               No transactions yet — connect and sync to populate metrics.
             {% endif %}

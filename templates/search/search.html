@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load money %}
 {% load risk_badge %}
 
 {% block title %}Search • FinOps Ops Console{% endblock %}
@@ -40,7 +41,7 @@
                   {{ r.risk_state|cut:"_" }}
                 </span>
               </div>
-              <div class="mt-1 text-sm">{{ r.amount }} {{ r.currency }}</div>
+              <div class="mt-1 text-sm">{{ r|money }}</div>
             </a>
           {% empty %}
             <div class="text-sm text-slate-500">No refunds.</div>
@@ -54,7 +55,7 @@
           {% for t in result.transactions %}
             <div class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
               <div class="font-mono text-xs text-slate-700">{{ t.external_id }}</div>
-              <div class="mt-1 text-sm">{{ t.amount }} {{ t.currency }} • {{ t.status }}</div>
+              <div class="mt-1 text-sm">{{ t|money }} • {{ t.status }}</div>
             </div>
           {% empty %}
             <div class="text-sm text-slate-500">No transactions.</div>
@@ -68,7 +69,7 @@
           {% for d in result.disputes %}
             <a href="{% url 'ops_disputes:detail' d.id %}" class="block rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200 hover:bg-slate-100">
               <div class="font-mono text-xs text-slate-700">{{ d.external_id }}</div>
-              <div class="mt-1 text-sm">{{ d.amount }} {{ d.currency }} • {{ d.status }}</div>
+              <div class="mt-1 text-sm">{{ d|money }} • {{ d.status }}</div>
             </a>
           {% empty %}
             <div class="text-sm text-slate-500">No disputes.</div>

@@ -4,16 +4,21 @@ import csv
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
+from uuid import uuid4
+from xml.sax.saxutils import escape
 
 from django.conf import settings
 from django.utils import timezone
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.pdfgen import canvas
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from apps.exports.models import ExportPack
 from apps.ops_disputes.models import Dispute
 from apps.ops_refunds.models import Refund
+from apps.ops_refunds.templatetags.money import format_money
 
 
 @dataclass(frozen=True)
@@ -30,7 +35,7 @@ def _exports_dir() -> Path:
 
 def _safe_filename(prefix: str, ext: str) -> str:
     ts = timezone.now().strftime("%Y%m%d_%H%M%S")
-    return f"{prefix}_{ts}.{ext}"
+    return f"{prefix}_{ts}_{uuid4().hex}.{ext}"
 
 
 def create_overdue_refunds_pdf(workspace_id: int) -> ExportResult:
@@ -123,144 +128,120 @@ def create_dispute_evidence_pack_pdf(dispute_id: int) -> ExportResult:
     return ExportResult(export=export, abs_path=abs_path)
 
 
+def _report(path, title, subtitle, content):
+    styles = getSampleStyleSheet()
+    document = SimpleDocTemplate(
+        str(path),
+        pagesize=A4,
+        rightMargin=18 * mm,
+        leftMargin=18 * mm,
+        topMargin=18 * mm,
+        bottomMargin=18 * mm,
+    )
+    story = [
+        Paragraph(escape(title), styles["Title"]),
+        Paragraph(escape(subtitle), styles["Normal"]),
+        Spacer(1, 8 * mm),
+        *content,
+    ]
+
+    def footer(canvas, doc):
+        canvas.setFont("Helvetica", 8)
+        canvas.setFillColor(colors.HexColor("#64748b"))
+        canvas.drawString(
+            18 * mm, 10 * mm, "FinOps | Operations evidence | Review before submission"
+        )
+        canvas.drawRightString(A4[0] - 18 * mm, 10 * mm, f"Page {doc.page}")
+
+    document.build(story, onFirstPage=footer, onLaterPages=footer)
+
+
+def _paragraph(value, style="Normal"):
+    return Paragraph(escape(str(value)), getSampleStyleSheet()[style])
+
+
 def _render_overdue_refunds_pdf(abs_path: Path, refunds: Iterable[Refund]) -> None:
-    c = canvas.Canvas(str(abs_path), pagesize=A4)
-    width, height = A4
-
-    y = height - 20 * mm
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(20 * mm, y, "Overdue Refunds Report")
-    y -= 8 * mm
-    c.setFont("Helvetica", 10)
-    c.drawString(20 * mm, y, f"Generated: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')} UTC")
-    y -= 10 * mm
-
-    headers = ["Refund ID", "Amount", "Status", "Initiated", "Expected By", "Customer Email"]
-    col_x = [20 * mm, 55 * mm, 80 * mm, 110 * mm, 140 * mm, 170 * mm]
-
-    c.setFont("Helvetica-Bold", 9)
-    for hx, htxt in zip(col_x, headers, strict=True):
-        c.drawString(hx, y, htxt)
-    y -= 5 * mm
-    c.setLineWidth(0.3)
-    c.line(20 * mm, y, width - 20 * mm, y)
-    y -= 6 * mm
-
-    c.setFont("Helvetica", 8)
-    count = 0
-    for r in refunds:
-        if y < 20 * mm:
-            c.showPage()
-            y = height - 20 * mm
-            c.setFont("Helvetica-Bold", 9)
-            for hx, htxt in zip(col_x, headers, strict=True):
-                c.drawString(hx, y, htxt)
-            y -= 5 * mm
-            c.line(20 * mm, y, width - 20 * mm, y)
-            y -= 6 * mm
-            c.setFont("Helvetica", 8)
-
-        amount = f"{r.amount/100:.2f} {r.currency}" if r.currency else str(r.amount)
-        c.drawString(col_x[0], y, r.external_id[:18])
-        c.drawString(col_x[1], y, amount[:14])
-        c.drawString(col_x[2], y, r.status[:10])
-        c.drawString(col_x[3], y, r.initiated_at.strftime("%Y-%m-%d"))
-        c.drawString(col_x[4], y, r.expected_by.strftime("%Y-%m-%d") if r.expected_by else "-")
-        c.drawString(col_x[5], y, (r.customer.email if r.customer else "-")[:22])
-        y -= 5 * mm
-        count += 1
-
-    y -= 8 * mm
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(20 * mm, y, f"Total overdue refunds: {count}")
-    c.save()
+    records = list(refunds)
+    rows = [
+        [
+            _paragraph(text, "Heading5")
+            for text in ["Refund / customer", "Amount", "Status", "Expected by"]
+        ]
+    ]
+    for refund in records:
+        rows.append(
+            [
+                _paragraph(
+                    refund.external_id + " / " + (refund.customer.email if refund.customer else "-")
+                ),
+                _paragraph(format_money(refund.amount, refund.currency)),
+                _paragraph(refund.status),
+                _paragraph(refund.expected_by.strftime("%Y-%m-%d") if refund.expected_by else "-"),
+            ]
+        )
+    table = Table(rows, colWidths=[70 * mm, 35 * mm, 30 * mm, 39 * mm], repeatRows=1, hAlign="LEFT")
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e2e8f0")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
+                ("TOPPADDING", (0, 0), (-1, -1), 9),
+                ("LINEBELOW", (0, 0), (-1, -1), 0.3, colors.HexColor("#cbd5e1")),
+            ]
+        )
+    )
+    content = [table, Spacer(1, 8 * mm), _paragraph(f"Total overdue refunds: {len(records)}")]
+    if any(refund.raw_payload.get("synthetic") for refund in records):
+        content.insert(0, _paragraph("DEMO DATA: staged records, not production refunds."))
+        content.insert(1, Spacer(1, 5 * mm))
+    _report(
+        abs_path,
+        "Overdue Refunds Report",
+        f"Generated {timezone.now():%Y-%m-%d %H:%M UTC}",
+        content,
+    )
 
 
 def _render_evidence_pack_pdf(abs_path: Path, dispute: Dispute) -> None:
-    c = canvas.Canvas(str(abs_path), pagesize=A4)
-    width, height = A4
-    y = height - 18 * mm
-
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(20 * mm, y, "Dispute Evidence Pack")
-    y -= 8 * mm
-    c.setFont("Helvetica", 10)
-    c.drawString(20 * mm, y, f"Dispute ID: {dispute.external_id}")
-    y -= 5 * mm
-    c.drawString(20 * mm, y, f"Provider: {dispute.provider}    Status: {dispute.status}")
-    y -= 5 * mm
-    c.drawString(20 * mm, y, f"Amount: {dispute.amount/100:.2f} {dispute.currency}")
-    y -= 5 * mm
-    if dispute.deadline_at:
-        c.drawString(20 * mm, y, f"Deadline: {dispute.deadline_at.strftime('%Y-%m-%d')}")
-        y -= 5 * mm
-
-    c.setLineWidth(0.4)
-    c.line(20 * mm, y, width - 20 * mm, y)
-    y -= 8 * mm
-
-    # Linked entities summary
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(20 * mm, y, "Linked context")
-    y -= 6 * mm
-    c.setFont("Helvetica", 10)
-    cust = dispute.customer
-    if cust:
-        c.drawString(20 * mm, y, f"Customer: {cust.email or '-'}  {cust.name or ''}")
-        y -= 5 * mm
-    if dispute.order:
-        c.drawString(
-            20 * mm, y, f"Order: {dispute.order.external_id}  Status: {dispute.order.status}"
+    content = []
+    if dispute.raw_payload.get("synthetic"):
+        content.extend(
+            [
+                _paragraph("DEMO DATA: synthetic dispute; not submitted to a provider."),
+                Spacer(1, 5 * mm),
+            ]
         )
-        y -= 5 * mm
-    if dispute.transaction:
-        c.drawString(
-            20 * mm,
-            y,
-            f"Transaction: {dispute.transaction.external_id}  Status: {dispute.transaction.status}",
+    for label, value in [
+        ("Dispute", dispute.external_id),
+        ("Provider", dispute.provider),
+        ("Status", dispute.status),
+        ("Reason", dispute.reason),
+        ("Amount", format_money(dispute.amount, dispute.currency)),
+        ("Deadline", str(dispute.deadline_at or "Not supplied")),
+        ("Customer", dispute.customer.email if dispute.customer else "Not linked"),
+        ("Order", dispute.order.external_id if dispute.order else "Not linked"),
+        ("Payment", dispute.transaction.external_id if dispute.transaction else "Not linked"),
+    ]:
+        content.append(_paragraph(f"{label}: {value}"))
+        content.append(Spacer(1, 2 * mm))
+    content.extend([Spacer(1, 5 * mm), _paragraph("Evidence checklist", "Heading2")])
+    for item in dispute.evidence_items.all().prefetch_related("files"):
+        content.append(
+            _paragraph(f"{item.type.replace('_', ' ').title()}: {item.status}", "Heading3")
         )
-        y -= 5 * mm
-
-    y -= 4 * mm
-    c.setLineWidth(0.3)
-    c.line(20 * mm, y, width - 20 * mm, y)
-    y -= 8 * mm
-
-    # Evidence checklist
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(20 * mm, y, "Evidence checklist")
-    y -= 6 * mm
-
-    items = dispute.evidence_items.all().prefetch_related("files")
-    c.setFont("Helvetica", 10)
-
-    for item in items:
-        if y < 25 * mm:
-            c.showPage()
-            y = height - 18 * mm
-            c.setFont("Helvetica-Bold", 12)
-            c.drawString(20 * mm, y, "Evidence checklist (cont.)")
-            y -= 8 * mm
-            c.setFont("Helvetica", 10)
-
-        status = item.status.upper()
-        c.drawString(20 * mm, y, f"- {item.type}  [{status}]")
-        y -= 5 * mm
-        if item.notes:
-            c.setFont("Helvetica", 9)
-            c.drawString(25 * mm, y, f"Notes: {item.notes[:90]}")
-            y -= 5 * mm
-            c.setFont("Helvetica", 10)
-
-        for f in item.files.all():
-            c.setFont("Helvetica", 9)
-            c.drawString(30 * mm, y, f"File: {f.filename} ({f.mime_type or 'unknown'})")
-            y -= 4 * mm
-            c.setFont("Helvetica", 10)
-
-        y -= 2 * mm
-
-    y -= 6 * mm
-    c.setFont("Helvetica", 9)
-    c.drawString(20 * mm, y, f"Generated: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')} UTC")
-    c.save()
+        content.append(_paragraph(item.notes or "No notes recorded."))
+        for file in item.files.all():
+            content.append(_paragraph(f"File reference: {file.filename}"))
+        content.append(Spacer(1, 3 * mm))
+    content.extend(
+        [
+            Spacer(1, 5 * mm),
+            _paragraph(
+                "This summary is not proof that evidence is complete or that a dispute has been won. File upload and provider submission are not implemented."
+            ),
+        ]
+    )
+    _report(
+        abs_path, "Dispute Evidence Pack", f"Generated {timezone.now():%Y-%m-%d %H:%M UTC}", content
+    )

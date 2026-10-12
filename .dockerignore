@@ -1,0 +1,13 @@
+.git
+.env
+.env.*
+.venv
+__pycache__
+*.sqlite3
+media
+htmlcov
+.coverage
+coverage.xml
+node_modules
+staticfiles
+

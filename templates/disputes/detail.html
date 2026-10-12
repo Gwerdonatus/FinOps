@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load money risk_badge %}
 
 {% block title %}Dispute {{ dispute.external_id }} • FinOps Ops Console{% endblock %}
 
@@ -17,7 +18,7 @@
   <div class="mt-6 grid gap-4 md:grid-cols-3">
     <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
       <div class="text-xs text-slate-500">Amount</div>
-      <div class="mt-2 text-lg font-semibold">{{ dispute.amount }} {{ dispute.currency }}</div>
+      <div class="mt-2 text-lg font-semibold">{{ dispute|money }}</div>
       <div class="mt-3 text-xs text-slate-500">Deadline</div>
       <div class="mt-1 text-sm font-semibold">{% if dispute.deadline_at %}{{ dispute.deadline_at }}{% else %}—{% endif %}</div>
     </div>
@@ -27,12 +28,25 @@
       <div class="mt-3 grid gap-2 sm:grid-cols-2">
         {% for item in dispute.evidence_items.all %}
           <div class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div class="text-sm font-semibold">{{ item.type|cut:"_"|capfirst }}</div>
-            <div class="mt-1 text-xs text-slate-600">Status: {{ item.status }}</div>
+            <div class="text-sm font-semibold">{{ item.type|state_label }}</div>
+            <form method="post" action="{% url 'ops_disputes:update_evidence' dispute.id item.id %}" class="mt-3 space-y-2">
+              {% csrf_token %}
+              <label class="block text-xs text-slate-600" for="status-{{ item.id }}">Checklist status</label>
+              <select id="status-{{ item.id }}" name="status" class="w-full rounded-lg border border-slate-200 p-2 text-sm">
+                <option value="missing" {% if item.status == 'missing' %}selected{% endif %}>Missing</option>
+                <option value="reviewed" {% if item.status == 'reviewed' %}selected{% endif %}>Reviewed</option>
+                <option value="not_applicable" {% if item.status == 'not_applicable' %}selected{% endif %}>Not applicable</option>
+              </select>
+              <label class="block text-xs text-slate-600" for="notes-{{ item.id }}">Review notes</label>
+              <textarea id="notes-{{ item.id }}" name="notes" maxlength="4000" rows="3" class="w-full rounded-lg border border-slate-200 p-2 text-sm">{{ item.notes }}</textarea>
+              <button class="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Save review</button>
+            </form>
           </div>
         {% endfor %}
       </div>
-      <div class="mt-3 text-xs text-slate-500">Uploads + exports come in Phase 3.</div>
+      <form method="post" action="{% url 'exports:dispute_evidence_pack' dispute.id %}" class="mt-4">{% csrf_token %}<button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Generate evidence PDF</button></form>
+      <a href="{% url 'exports:list' %}" class="mt-3 inline-block text-sm underline">View generated exports</a>
+      <p class="mt-3 text-xs text-slate-500">This report summarizes the checklist and linked records. File uploads and provider evidence submission are not implemented.</p>
     </div>
   </div>
 

@@ -24,3 +24,8 @@ def risk_badge_class(risk_state: str) -> str:
 @register.filter
 def severity_badge_class(severity: str) -> str:
     return SEVERITY_CLASS.get(severity, "bg-slate-100 text-slate-800 ring-slate-200")
+
+
+@register.filter
+def state_label(value):
+    return str(value).replace("_", " ").title()

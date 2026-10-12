@@ -27,7 +27,13 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: pip install -c requirements.lock -e ".[dev]"
+
+      - name: Validate Compose configuration
+        run: |
+          cp .env.example .env
+          docker compose config --quiet
+          rm .env
 
       - name: Lint
         run: ruff check .

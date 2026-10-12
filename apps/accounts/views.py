@@ -47,6 +47,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     has_data = tx_count > 0
 
     refunds = Refund.objects.filter(workspace=ws)
+    is_synthetic = ws is not None and ws.slug == "demo-store"
     counts = {
         "SAFE": refunds.filter(risk_state="SAFE").count(),
         "DUE_SOON": refunds.filter(risk_state="DUE_SOON").count(),
@@ -62,6 +63,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             "sla_days": ws.sla_days if ws else None,
             "counts": counts,
             "has_connection": has_connection,
+            "is_synthetic": is_synthetic,
             "has_data": has_data,
             "tx_count": tx_count,
         },
@@ -87,3 +89,16 @@ def update_sla(request: HttpRequest) -> HttpResponse:
         except Exception:
             messages.error(request, "Invalid SLA value. Use a number between 1 and 60.")
     return redirect("dashboard")
+
+
+def health(request):
+    from django.db import connection
+    from django.http import JsonResponse
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except Exception:
+        return JsonResponse({"status": "unavailable"}, status=503)
+    return JsonResponse({"status": "healthy"})

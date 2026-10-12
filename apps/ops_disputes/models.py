@@ -47,3 +47,20 @@ class EvidenceFile(models.Model):
     filename = models.CharField(max_length=200)
     mime_type = models.CharField(max_length=80, blank=True, default="")
     uploaded_at = models.DateTimeField(default=timezone.now)
+    size_bytes = models.PositiveIntegerField(default=0)
+    sha256 = models.CharField(max_length=64, blank=True, default="")
+    text_content = models.TextField(blank=True, default="")
+
+
+class CaseBrief(models.Model):
+    dispute = models.ForeignKey(Dispute, on_delete=models.CASCADE, related_name="briefs")
+    created_at = models.DateTimeField(auto_now_add=True)
+    source_hash = models.CharField(max_length=64)
+    model = models.CharField(max_length=100)
+    payload = models.JSONField()
+    sources = models.JSONField()
+
+
+class AIConfiguration(models.Model):
+    workspace = models.OneToOneField(Workspace, on_delete=models.CASCADE)
+    credentials_encrypted = models.TextField()

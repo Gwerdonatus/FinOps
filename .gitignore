@@ -37,3 +37,7 @@ Thumbs.db
 # IDEs
 .vscode/
 .idea/
+
+!.env.example
+htmlcov/
+.wheel-cache/*.whl

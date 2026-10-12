@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load money risk_badge %}
 
 {% block title %}Dispute {{ dispute.external_id }} • FinOps Ops Console{% endblock %}
 
@@ -9,6 +10,7 @@
       <h1 class="mt-1 text-xl font-semibold tracking-tight font-mono">{{ dispute.external_id }}</h1>
       <p class="mt-1 text-sm text-slate-600">{{ dispute.status }} • {{ dispute.reason|default:"—" }}</p>
     </div>
+    <a href="#case-brief" class="rounded-xl bg-indigo-700 px-4 py-2 text-sm font-semibold text-white">Read case brief</a>
     <a href="{% url 'ops_disputes:list' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50">
       Back
     </a>
@@ -17,7 +19,7 @@
   <div class="mt-6 grid gap-4 md:grid-cols-3">
     <div class="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
       <div class="text-xs text-slate-500">Amount</div>
-      <div class="mt-2 text-lg font-semibold">{{ dispute.amount }} {{ dispute.currency }}</div>
+      <div class="mt-2 text-lg font-semibold">{{ dispute|money }}</div>
       <div class="mt-3 text-xs text-slate-500">Deadline</div>
       <div class="mt-1 text-sm font-semibold">{% if dispute.deadline_at %}{{ dispute.deadline_at }}{% else %}—{% endif %}</div>
     </div>
@@ -26,17 +28,40 @@
       <div class="text-sm font-semibold">Evidence checklist</div>
       <div class="mt-3 grid gap-2 sm:grid-cols-2">
         {% for item in dispute.evidence_items.all %}
-          <div class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
-            <div class="text-sm font-semibold">{{ item.type|cut:"_"|capfirst }}</div>
-            <div class="mt-1 text-xs text-slate-600">Status: {{ item.status }}</div>
+          <div id="evidence-{{ item.id }}" class="scroll-mt-24 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div class="text-sm font-semibold">{{ item.type|state_label }}</div>
+            <form method="post" action="{% url 'ops_disputes:update_evidence' dispute.id item.id %}" class="mt-3 space-y-2">
+              {% csrf_token %}
+              <label class="block text-xs text-slate-600" for="status-{{ item.id }}">Checklist status</label>
+              <select id="status-{{ item.id }}" name="status" class="w-full rounded-lg border border-slate-200 p-2 text-sm">
+                <option value="missing" {% if item.status == 'missing' %}selected{% endif %}>Missing</option>
+                {% if item.files.exists %}<option value="uploaded" {% if item.status == 'uploaded' %}selected{% endif %}>Attached · awaiting review</option>{% endif %}
+                <option value="reviewed" {% if item.status == 'reviewed' %}selected{% endif %}>Reviewed</option>
+                <option value="not_applicable" {% if item.status == 'not_applicable' %}selected{% endif %}>Not applicable</option>
+              </select>
+              <label class="block text-xs text-slate-600" for="notes-{{ item.id }}">Review notes</label>
+              <textarea id="notes-{{ item.id }}" name="notes" maxlength="4000" rows="3" class="w-full rounded-lg border border-slate-200 p-2 text-sm">{{ item.notes }}</textarea>
+              <button class="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">Save review</button>
+            </form>
+            <ul class="mt-3 space-y-2 text-xs">
+              {% for file in item.files.all %}<li><a class="text-indigo-700 underline" href="{% url 'ops_disputes:download_evidence' file.id %}">{{ file.filename }}</a> · {{ file.size_bytes }} bytes</li>{% endfor %}
+            </ul>
+            <form method="post" enctype="multipart/form-data" action="{% url 'ops_disputes:upload_evidence' dispute.id item.id %}" class="mt-3 space-y-2">
+              {% csrf_token %}
+              <label for="file-{{ item.id }}" class="block text-xs font-semibold">Attach evidence (PDF, PNG, JPEG or text; up to 5 MB)</label>
+              <input id="file-{{ item.id }}" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.txt" required class="w-full text-xs" />
+              <button class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold">Upload evidence</button>
+            </form>
           </div>
         {% endfor %}
       </div>
-      <div class="mt-3 text-xs text-slate-500">Uploads + exports come in Phase 3.</div>
+      <form method="post" action="{% url 'exports:dispute_evidence_pack' dispute.id %}" class="mt-4">{% csrf_token %}<button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Generate evidence PDF</button></form>
+      <a href="{% url 'exports:list' %}" class="mt-3 inline-block text-sm underline">View generated exports</a>
+      <p class="mt-3 text-xs text-slate-500">This report summarizes the checklist and linked records. Attachments are private. Provider evidence submission is not implemented.</p>
     </div>
   </div>
 
-  <div class="mt-6 rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+  <div id="linked-records" class="scroll-mt-24 mt-6 rounded-2xl bg-white p-5 ring-1 ring-slate-200">
     <div class="text-sm font-semibold">Linked objects</div>
     <div class="mt-4 grid gap-3 md:grid-cols-3">
       <div class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
@@ -53,4 +78,24 @@
       </div>
     </div>
   </div>
+  <section id="case-brief" class="scroll-mt-24 mt-6 rounded-2xl bg-white p-6 ring-1 ring-slate-200">
+    <h2 class="text-lg font-semibold">Case brief</h2>
+    <p class="mt-2 text-sm text-slate-600">Source records explain the case. Notes and uploaded documents are unverified evidence. Only UTF-8 text attachment contents are extracted; PDF and images require human review.</p>
+    <div class="mt-4 space-y-3">{% for source in sources %}<div class="rounded-xl bg-slate-50 p-3 text-sm"><a class="font-semibold text-indigo-700 underline" href="{{ source.url }}">{{ source.label }}</a><p class="mt-1 break-words">{{ source.text }}</p></div>{% endfor %}</div>
+    <h3 class="mt-6 font-semibold">AI investigation draft</h3>
+    {% if not ai_configured %}<p class="mt-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">OpenAI is not configured. The source-based brief above remains available.</p>{% endif %}
+    {% if brief %}
+      <p class="mt-2 text-xs text-slate-500">Generated {{ brief.created_at }} · {{ brief.model }} · Human review required.</p>
+      {% if brief_stale %}<p class="mt-2 font-semibold text-amber-800">Case sources have changed. This saved draft may be out of date.</p>{% endif %}
+      <h4 class="mt-4 font-semibold">Observations</h4>
+      {% for row in draft.observations %}<div class="mt-3 border-l-2 border-indigo-200 pl-3 text-sm"><p>{{ row.text }}</p><a class="text-indigo-700 underline" href="{{ row.source.url }}">{{ row.source.label }}</a><blockquote class="mt-1 text-xs text-slate-500">“{{ row.quote }}”</blockquote></div>{% endfor %}
+      <h4 class="mt-4 font-semibold">Suggested next steps</h4>
+      {% for row in draft.next_steps %}<div class="mt-3 border-l-2 border-amber-200 pl-3 text-sm"><p>{{ row.text }}</p><a class="text-indigo-700 underline" href="{{ row.source.url }}">{{ row.source.label }}</a><blockquote class="mt-1 text-xs text-slate-500">“{{ row.quote }}”</blockquote></div>{% endfor %}
+    {% endif %}
+    <form method="post" action="{% url 'ops_disputes:create_brief' dispute.id %}" class="mt-4 space-y-3">{% csrf_token %}
+      <label class="block text-sm"><input type="checkbox" name="consent" value="yes" required /> Send displayed case sources, review notes and extracted text to OpenAI to generate a draft.</label>
+      <button {% if not ai_configured %}disabled{% endif %} class="rounded-xl bg-indigo-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Generate AI draft</button>
+    </form>
+    <p class="mt-3 text-xs text-slate-500">Source references are validated, but interpretation can still be wrong. AI cannot execute refunds or submit dispute evidence.</p>
+  </section>
 {% endblock %}

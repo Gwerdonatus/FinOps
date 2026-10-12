@@ -8,7 +8,7 @@
   <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
     <div>
       <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Alerts</h1>
-      <p class="mt-1 text-sm text-slate-600">High-signal warnings to prevent disputes and churn.</p>
+      <p class="mt-1 text-sm text-slate-600">Deadline warnings for cases that need investigation.</p>
     </div>
 
     <div class="flex items-center gap-2">
@@ -63,11 +63,11 @@
               <!-- Right rail (always visible, doesn’t “hide”) -->
               <div class="shrink-0">
                 <a
-                  href="{% url 'ops_search:search' %}?q={{ a.entity_id }}"
+                  href="{% url 'ops_refunds:detail' a.entity_id %}"
                   class="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto"
-                  title="Open in Search"
+                  title="Open refund"
                 >
-                  View in Search →
+                  View refund →
                 </a>
               </div>
             </div>

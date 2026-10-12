@@ -1,47 +1,17 @@
-# Connector setup (Stripe / Shopify / Paystack)
+# Connector scope
 
-This repo supports **real provider connections**. For the demo video you can connect Stripe in **test mode** and generate demo data.
+## Stripe sandbox
 
-## Stripe (recommended for demo)
+FinOps imports existing sandbox charges, refunds and disputes. It creates no provider payments, refunds or dispute submissions. An admin saves a `sk_test_` key in Connections, selects Test to verify the account, then Sync. The periodic worker repeats synchronization every five minutes. Status includes account ID, last attempt, last success and sanitized errors.
 
-1. Create a Stripe account (or use an existing one).
-2. Switch to **Developers → API keys** and copy your **test** secret key (`sk_test_...`).
-3. In the app: **Connections → Stripe → Save key**
-4. (Demo) Click **Generate 250 demo transactions**. This creates Stripe test objects and auto-syncs them.
+Webhook route: `/webhooks/stripe/<connection_id>/`. Configure the endpoint's own signing secret in the Stripe card. A local endpoint requires Stripe CLI forwarding; a hosted endpoint requires HTTPS. Do not reuse a different application's signing secret. Duplicate signed events are deduplicated; current resource state is fetched from Stripe.
 
-## Shopify (token-based, no OAuth required for MVP)
+Existing sandbox credentials were reused locally with the owner's authorization. Read-only import returned three payments and no refunds/disputes. Other staged cases remain synthetic. External delivery is not configured; signed local delivery and retry behavior are tested.
 
-This uses a standard Shopify pattern: a **Custom App** with an Admin API token.
+## OpenAI
 
-1. In Shopify admin: **Settings → Apps and sales channels → Develop apps**
-2. Create a **Custom App**
-3. Configure **Admin API scopes** (minimum for read-only demo):
-   - `read_orders`
-   - `read_customers`
-4. Install the app and copy the **Admin API access token** (`shpat_...`)
-5. In the app: **Connections → Shopify**
-   - Shop domain: `your-store.myshopify.com`
-   - Admin token: `shpat_...`
-   - Click **Test**
+Admins configure a key in Connections → OpenAI case briefs. Each case asks for explicit source sharing before generation. This environment intentionally has no OpenAI key yet; API transport/schema/error paths are tested with mocked responses.
 
-## Paystack (token-based)
+## Other providers
 
-1. In Paystack dashboard: **Settings → API Keys & Webhooks**
-2. Copy your **test** secret key (`sk_test_...`) for demo/dev.
-3. In the app: **Connections → Paystack → Save key → Test**
-
-## Security
-
-Provider credentials are stored encrypted using Fernet (`cryptography`). Set `ENCRYPTION_KEY` in `.env`:
-
-```bash
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-```
-
-Then put that output into:
-
-```env
-ENCRYPTION_KEY=...
-```
-
-**Never commit real keys** to GitHub.
+Shopify and Paystack retain existing credential/test/list adapters. Full record imports are unfinished. PayPal is a placeholder. Neither adapter is part of the verified Stripe release.

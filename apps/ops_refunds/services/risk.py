@@ -29,17 +29,22 @@ def compute_risk_state(expected_by, now):
 
 def apply_risk(refund: Refund, sla_days: int):
     now = timezone.now()
-    expected_by = refund.expected_by or compute_expected_by(refund.initiated_at, sla_days)
-    new_state = compute_risk_state(expected_by, now)
+    expected_by = compute_expected_by(refund.initiated_at, sla_days)
+    new_state = (
+        Refund.RISK_SAFE
+        if refund.status in {"succeeded", "canceled", "cancelled"}
+        else compute_risk_state(expected_by, now)
+    )
 
     old_state = refund.risk_state
-    changed = (old_state != new_state) or (refund.expected_by is None)
+    changed = (old_state != new_state) or (refund.expected_by != expected_by)
 
     if changed:
         refund.expected_by = expected_by
         refund.risk_state = new_state
         refund.save(update_fields=["expected_by", "risk_state"])
 
+    if old_state != new_state:
         if new_state == Refund.RISK_DUE_SOON:
             create_alert(
                 workspace=refund.workspace,
@@ -48,6 +53,15 @@ def apply_risk(refund: Refund, sla_days: int):
                 entity_type="refund",
                 entity_id=refund.id,
                 message=f"Refund {refund.external_id} is due soon (SLA risk).",
+            )
+        elif new_state == Refund.RISK_AT_RISK:
+            create_alert(
+                workspace=refund.workspace,
+                type=Alert.TYPE_REFUND_AT_RISK,
+                severity=Alert.SEVERITY_WARNING,
+                entity_type="refund",
+                entity_id=refund.id,
+                message=f"Refund {refund.external_id} is due within 24 hours.",
             )
         elif new_state == Refund.RISK_OVERDUE:
             create_alert(
@@ -58,6 +72,14 @@ def apply_risk(refund: Refund, sla_days: int):
                 entity_id=refund.id,
                 message=f"Refund {refund.external_id} is overdue (chargeback risk).",
             )
+
+    if new_state == Refund.RISK_SAFE:
+        Alert.objects.filter(
+            workspace=refund.workspace,
+            entity_type="refund",
+            entity_id=refund.id,
+            resolved_at__isnull=True,
+        ).update(resolved_at=now)
 
     return old_state, new_state
 

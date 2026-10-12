@@ -1,19 +1,64 @@
 services:
   db:
-    image: postgres:16
+    image: postgres:16-alpine
     environment:
       POSTGRES_USER: finops
-      POSTGRES_PASSWORD: finops
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
       POSTGRES_DB: finops_console
-    ports:
-      - "5432:5432"
     volumes:
       - finops_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U finops -d finops_console"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
 
-  redis:
-    image: redis:7
+  web:
+    build: .
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.base
+      DATABASE_URL: postgres://finops:${POSTGRES_PASSWORD}@db:5432/finops_console
     ports:
-      - "6379:6379"
+      - "127.0.0.1:${WEB_PORT:-8300}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - finops_media:/app/media
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/', timeout=5)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 40s
+      retries: 10
+    restart: unless-stopped
+
+  risk-worker:
+    build: .
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.base
+      DATABASE_URL: postgres://finops:${POSTGRES_PASSWORD}@db:5432/finops_console
+    command: [python, manage.py, watch_refund_risk]
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+
+  stripe-worker:
+    build: .
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.base
+      DATABASE_URL: postgres://finops:${POSTGRES_PASSWORD}@db:5432/finops_console
+    command: [python, manage.py, watch_stripe_sync]
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   finops_db_data:
+  finops_media:

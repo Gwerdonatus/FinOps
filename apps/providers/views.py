@@ -6,6 +6,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
+from apps.ops_disputes.models import AIConfiguration
+from apps.providers.services.crypto import encrypt_json
 from apps.workspaces.models import Workspace
 
 from .forms import PaystackConnectForm, ShopifyConnectForm, StripeConnectForm
@@ -13,7 +15,6 @@ from .models import ProviderConnection
 from .paystack.client import PaystackClient, PaystackCredentials
 from .services.crypto import CredentialEncryptionError
 from .services.sync import (
-    stripe_seed_demo_data,
     stripe_sync_last_days,
     stripe_test_connection,
 )
@@ -46,6 +47,7 @@ def connections(request: HttpRequest) -> HttpResponse:
     paypal_conn = conns.get(ProviderConnection.PROVIDER_PAYPAL)
 
     context = {
+        "ai_configured": AIConfiguration.objects.filter(workspace=ws).exists(),
         "stripe_conn": stripe_conn,
         "shopify_conn": shopify_conn,
         "paystack_conn": paystack_conn,
@@ -66,6 +68,9 @@ def connect_provider(request: HttpRequest, provider: str) -> HttpResponse:
     IMPORTANT: We do NOT claim 'Connected' until user clicks Test and it succeeds.
     """
     ws = request.workspace
+    if request.workspace_role != "admin":
+        messages.error(request, "Only workspace admins can configure providers.")
+        return redirect("providers:connections")
     if request.method != "POST":
         return redirect("providers:connections")
 
@@ -79,11 +84,20 @@ def connect_provider(request: HttpRequest, provider: str) -> HttpResponse:
                 return redirect("providers:connections")
 
             secret_key = (form.cleaned_data["secret_key"] or "").strip()
-            if not (secret_key.startswith("sk_test_") or secret_key.startswith("sk_live_")):
-                messages.error(request, "Stripe key must start with sk_test_ or sk_live_.")
+            if not secret_key.startswith("sk_test_"):
+                messages.error(request, "Stripe requires a sandbox key starting with sk_test_.")
                 return redirect("providers:connections")
 
-            conn.set_credentials({"secret_key": secret_key})
+            webhook_secret = request.POST.get("webhook_secret", "").strip()
+            if webhook_secret and not webhook_secret.startswith("whsec_"):
+                messages.error(request, "Webhook signing secrets must start with whsec_.")
+                return redirect("providers:connections")
+            conn.set_credentials(
+                {
+                    "secret_key": secret_key,
+                    "webhook_secret": webhook_secret,
+                }
+            )
             conn.status = ProviderConnection.STATUS_DISCONNECTED
             conn.save(update_fields=["credentials_encrypted", "status"])
             messages.success(request, "Stripe key saved. Click Test to verify connection.")
@@ -153,7 +167,8 @@ def test_provider(request: HttpRequest, provider: str) -> HttpResponse:
 
             info = stripe_test_connection(conn)
             conn.status = ProviderConnection.STATUS_CONNECTED
-            conn.save(update_fields=["status"])
+            conn.account_id = info.get("id", "")
+            conn.save(update_fields=["status", "account_id"])
             messages.success(request, f"Stripe verified ✅ Account: {info.get('id')}")
             return redirect("providers:connections")
 
@@ -201,8 +216,8 @@ def test_provider(request: HttpRequest, provider: str) -> HttpResponse:
     except CredentialEncryptionError as exc:
         messages.error(request, str(exc))
         return redirect("providers:connections")
-    except Exception as exc:
-        messages.error(request, f"Test failed: {exc}")
+    except Exception:
+        messages.error(request, "Connection test failed. Check credentials and network.")
         return redirect("providers:connections")
 
 
@@ -225,7 +240,7 @@ def sync_provider(request: HttpRequest, provider: str) -> HttpResponse:
             result = stripe_sync_last_days(conn, days=30)
             messages.success(
                 request,
-                f"Stripe sync complete ✅ Imported {result['transactions']} txns and {result['refunds']} refunds.",
+                f"Stripe sync complete ✅ Imported {result['transactions']} txns and {result['refunds']} refunds and {result['disputes']} disputes.",
             )
             return redirect("providers:connections")
 
@@ -257,60 +272,35 @@ def sync_provider(request: HttpRequest, provider: str) -> HttpResponse:
     except CredentialEncryptionError as exc:
         messages.error(request, str(exc))
         return redirect("providers:connections")
-    except Exception as exc:
-        messages.error(request, f"Sync failed: {exc}")
+    except Exception:
+        messages.error(request, "Sync failed. Check credentials and network, then retry.")
         return redirect("providers:connections")
 
 
 @login_required
-def stripe_seed_demo(request: HttpRequest) -> HttpResponse:
-    """
-    Stripe is the ONLY provider with demo seeding (for recordings).
-    """
-    if request.method != "POST":
+def stripe_seed_demo(request):
+    messages.info(
+        request,
+        "Use the local seed_demo command. FinOps does not create provider payments or refunds.",
+    )
+    return redirect("providers:connections")
+
+
+@login_required
+def configure_ai(request):
+    if request.method != "POST" or request.workspace_role != "admin":
+        messages.error(request, "Only workspace admins can configure the AI service.")
         return redirect("providers:connections")
-
-    if not getattr(settings, "DEMO_MODE", False):
-        messages.error(request, "Demo seed is disabled (set DEMO_MODE=1).")
+    key = request.POST.get("api_key", "").strip()
+    if not key.startswith("sk-") or len(key) < 20:
+        messages.error(request, "Enter a valid OpenAI API key.")
         return redirect("providers:connections")
-
-    conn = _get_or_create_conn(request.workspace, ProviderConnection.PROVIDER_STRIPE)
-
-    # Require verified Stripe connection first.
-    if conn.status != ProviderConnection.STATUS_CONNECTED:
-        messages.error(
-            request,
-            "Please click Test on Stripe first. Demo seed is only available after verification.",
-        )
-        return redirect("providers:connections")
-
-    try:
-        secret_key = _safe_get_secret_key(conn)
-        if not secret_key:
-            messages.error(
-                request, "No Stripe key saved. Paste your sk_test_... key and click Save key first."
-            )
-            return redirect("providers:connections")
-
-        if not secret_key.startswith("sk_test_"):
-            messages.error(request, "For demo seeding, use a Stripe TEST key (sk_test_...).")
-            return redirect("providers:connections")
-
-        created_pis, created_refunds = stripe_seed_demo_data(conn, count=250)
-        messages.success(
-            request,
-            f"Generated {created_pis} demo payments and {created_refunds} refunds in Stripe.",
-        )
-
-        result = stripe_sync_last_days(conn, days=30)
-        messages.success(
-            request,
-            f"Synced into dashboard: {result['transactions']} txns, {result['refunds']} refunds.",
-        )
-
-    except CredentialEncryptionError as exc:
-        messages.error(request, str(exc))
-    except Exception as exc:
-        messages.error(request, f"Demo seed failed: {exc}")
-
+    AIConfiguration.objects.update_or_create(
+        workspace=request.workspace,
+        defaults={"credentials_encrypted": encrypt_json({"api_key": key})},
+    )
+    messages.success(
+        request,
+        "OpenAI key stored encrypted. Case sources are sent only when you request a draft and confirm sharing.",
+    )
     return redirect("providers:connections")

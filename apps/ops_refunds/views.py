@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from .models import Refund
 from .services.risk import recalc_refund_risk_for_workspace
@@ -39,6 +40,7 @@ def refund_detail(request: HttpRequest, refund_id: int) -> HttpResponse:
 
 
 @login_required
+@require_POST
 def recalc_risk(request: HttpRequest) -> HttpResponse:
     ws = request.workspace
     recalc_refund_risk_for_workspace(ws)

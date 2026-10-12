@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load money risk_badge %}
 {% load risk_badge %}
 
 {% block title %}Refunds • FinOps Ops Console{% endblock %}
@@ -19,7 +20,7 @@
         {% else %}
           <a href="{% url 'ops_refunds:list' %}?status={{ s }}"
              class="rounded-full px-3 py-1 text-sm ring-1 {% if filter_status == s %}bg-slate-900 text-white ring-slate-900{% else %}bg-white text-slate-700 ring-slate-200 hover:bg-slate-50{% endif %}">
-            {{ s|capfirst|cut:"_" }}
+            {{ s|state_label }}
           </a>
         {% endif %}
       {% endfor %}
@@ -52,7 +53,7 @@
               <td class="px-4 py-3">
                 {% if r.customer %}{{ r.customer.email|default:r.customer.external_id }}{% else %}<span class="text-slate-400">—</span>{% endif %}
               </td>
-              <td class="px-4 py-3">{{ r.amount }} {{ r.currency }}</td>
+              <td class="px-4 py-3">{{ r|money }}</td>
               <td class="px-4 py-3">{{ r.initiated_at|date:"Y-m-d" }}</td>
               <td class="px-4 py-3">{% if r.expected_by %}{{ r.expected_by|date:"Y-m-d" }}{% else %}<span class="text-slate-400">—</span>{% endif %}</td>
               <td class="px-4 py-3 text-right">
